@@ -1,0 +1,17 @@
+.DS_Store
+.env
+.venv/
+__pycache__/
+*.py[cod]
+
+outputs/
+outputs_mock/
+tmp/
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+.agents/
+.claude/
+skills-lock.json

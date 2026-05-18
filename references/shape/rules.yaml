@@ -1,0 +1,119 @@
+# Shape (形) routing rules.
+# Maps primary_symbol / symbols / live_vibe → silhouette + theme strings used in the prompt template.
+#
+# Each `apply:` block fills a fixed set of slots consumed by community_gift/template_first.py:
+#   silhouette            — short English silhouette label (winged / crown / etc.)
+#   theme_title           — Chinese stage-style title (3-part phrase)
+#   mood                  — comma-separated mood adjectives
+#   symbol_translation    — how to translate primary_symbol into product structure (template string)
+#   supporting_translation — how to translate secondary_symbol (template string)
+#   text_style            — how the nameplate should feel
+#   bottom_node           — what to add at the bottom node
+#   silhouette_language   — overall outer-contour language
+#
+# Template strings may use {primary_symbol} and {secondary_symbol} placeholders.
+#
+# ORDERING: first-match. Put SPECIFIC rules above GENERIC ones.
+
+version: 1
+
+defaults:
+  silhouette: "iconic sculpted lamp head"
+  theme_title: "个性符号感 × 舞台应援感 × 收藏级偶像周边风"
+  mood: "个性鲜明、舞台感"
+  symbol_translation: "将「{primary_symbol}」转译为灯头外轮廓、包边、冠饰、翅片、波形、花瓣、大体块结构或边缘切面"
+  supporting_translation: "将「{secondary_symbol}」仅作为小型浮雕、边缘节点、晶体镶嵌、局部发光细节或底座压纹，不要变成第二个主视觉"
+  text_style: "文字区偏偶像灯牌和频道标题感，保持干净、饱满、有局部内发光"
+  bottom_node: "加入与「{primary_symbol}」相关的压纹、徽章、护片、切面或流线装饰件"
+  silhouette_language: "圆润、完整、包裹、上扬、柔亮或利落的实体结构"
+
+rules:
+  # ----- Hat / sombrero (specific — keep before wing).
+  - id: hat
+    when:
+      - field: derived.primary_symbol_text
+        contains_any: ["帽", "hat", "sombrero", "fedora"]
+    apply:
+      silhouette: "brim-inspired lamp head"
+      theme_title: "帽檐轮廓感 × 复古舞台感 × 轻奢应援收藏风"
+      mood: "优雅、醒目、复古、亲切、带一点舞台人物感"
+      symbol_translation: "将「{primary_symbol}」解构为爱心上缘外扩的帽檐式弧线、层叠包边、柔和护片和复古舞台徽章轮廓;爱心本体保持一体式实体结构,不使用爱心外框,不出现镂空轮廓"
+      supporting_translation: "将「{secondary_symbol}」转译为边缘小型压纹、细光带和底部徽章节点，只增加人物记忆点"
+      text_style: "文字采用立体厚度发光字体,有浮雕感、柔亮描边、局部内发光、嵌入式结构感,自然嵌入中央实体核心"
+      bottom_node: "加入帽檐弧线压纹、珠光徽章、香槟金护片和柔和曲面装饰"
+      silhouette_language: "帽檐外扩、圆润包裹、轻奢复古、边缘厚度清楚的实体结构"
+
+  # ----- Butterfly (specific — keep before wing).
+  - id: butterfly
+    when:
+      - field: derived.primary_symbol_text
+        contains_any: ["蝴蝶", "butterfly", "나비"]
+    apply:
+      silhouette: "winged lamp head"
+      theme_title: "蝶翼轻盈感 × 梦幻舞台感 × 偶像应援收藏风"
+      mood: "温柔、轻盈、灵动、梦幻、带一点光斑感"
+      symbol_translation: "将「{primary_symbol}」解构为爱心两侧上扬的蝶翼式外轮廓、半透明翅膜质感、柔光描边和对称羽片切面;爱心本体保持一体式实体结构,不使用爱心外框,不出现镂空轮廓"
+      supporting_translation: "将「{secondary_symbol}」转译为环绕主体的小型蝶翼节点、晶体粉尘和底部压纹"
+      text_style: "文字采用立体厚度发光字体,有浮雕感、柔亮描边、局部内发光、嵌入式晶体效果,自然嵌入爱心中央实体核心"
+      bottom_node: "加入蝶翼压纹、柔和曲面护片、珠光徽章和细腻装饰件"
+      silhouette_language: "蝶翼上扬、对称包裹、轻盈飘逸、边缘清晰可抠图的实体结构"
+
+  # ----- Bird / wing / electric (generic wing).
+  - id: bird_wing
+    when:
+      - field: derived.primary_symbol_text
+        contains_any: ["羽翼", "wing", "feather", "鸟", "bird", "翅膀"]
+    apply:
+      silhouette: "winged lamp head"
+      theme_title: "暗羽电光感 × 甜酷舞台感 × 偶像应援收藏风"
+      mood: "灵动、锐利、上扬、甜酷、带一点夜色电光感"
+      symbol_translation: "将「{primary_symbol}」解构为爱心两侧上扬的羽翼式外轮廓、柔亮羽片切面、包裹中央核心的暗羽弧线和轻微前冲的飞行重心"
+      supporting_translation: "将「{secondary_symbol}」转译为沿爱心边缘跳动的细小电光折线、冷白晶体镶嵌和底座压纹，只提供速度感与能量感，不变成第二主视觉"
+      text_style: "文字区造型偏频道标题感和偶像灯牌感，外圈有柔亮描边与局部冷白内发光"
+      bottom_node: "加入羽片压纹、细小电光切面、银色护片和亮粉徽章节点"
+      silhouette_language: "羽翼上扬、圆润包裹、轻微前冲、边缘清晰可抠图的实体结构"
+
+  # ----- Crown / royal.
+  - id: crown
+    when:
+      - field: derived.primary_symbol_text
+        contains_any: ["皇冠", "crown", "queen", "king", "rey"]
+    apply:
+      silhouette: "crown lamp head"
+      theme_title: "皇冠竞技感 × 顶流舞台感 × 高光偶像收藏风"
+      mood: "耀眼、自信、利落、年轻、带一点竞技压迫感"
+      symbol_translation: "将「{primary_symbol}」解构为爱心上缘微微上扬的冠冕尖角、对称宝石切面、高光脊线和收束有力的舞台中心结构"
+      supporting_translation: "将「{secondary_symbol}」转译为边缘小型能量线、徽章镶嵌或底座竞技纹样，不要和皇冠主轮廓抢视觉"
+      text_style: "文字区偏战队徽章与女王冠语铭牌之间的感觉，锋利但不武器化"
+      bottom_node: "加入冠饰切面、镜面小铆钉、竞技编号感压纹和金属护片"
+      silhouette_language: "冠冕上扬、对称收束、晶体饱满、舞台高光明确的实体结构"
+
+  # ----- Potato / round mascot.
+  - id: potato_mascot
+    when:
+      - field: derived.primary_symbol_text
+        contains_any: ["土豆", "potato", "spud", "圆润", "mascot"]
+    apply:
+      silhouette: "rounded mascot lamp head"
+      theme_title: "圆润 mascot 感 × 亲切游戏感 × 收藏玩具应援风"
+      mood: "圆润、亲切、机灵、轻松、带一点综艺游戏感"
+      symbol_translation: "将「{primary_symbol}」解构为灯头顶部圆润鼓起的果冻体块、柔软弧面、小颗粒浮雕和亲切的甜系外轮廓;爱心或主体保持一体式实体结构,不使用外框,不使用镂空"
+      supporting_translation: "将「{secondary_symbol}」转译为环绕核心的竞猜圆环、按钮感小节点和底部节奏压纹，只保留游戏感，不做真实食物照片"
+      text_style: "文字采用圆润弧线粗体,具有立体厚度、浮雕感、柔亮描边、局部内发光、糖果嵌字光泽效果,自然嵌入中央实体核心"
+      bottom_node: "底部保持简洁,不额外设计主题底座,不加入复杂装饰件,让视觉重点集中在灯头"
+      silhouette_language: "软糖般圆润、厚实亲切、内聚稳定、收藏玩具式实体结构"
+
+  # ----- Heart explicit.
+  - id: heart
+    when:
+      - field: derived.primary_symbol_text
+        contains_any: ["爱心", "heart", "💕", "💜", "心"]
+    apply:
+      silhouette: "iconic sculpted lamp head"
+      theme_title: "温柔浪漫爱心感 × 梦幻陪伴感 × 偶像应援收藏风"
+      mood: "温柔、优雅、浪漫、梦幻、细腻"
+      symbol_translation: "将「{primary_symbol}」转译为融合在实体爱心灯头表面与内部层次中的柔和流线、微微上扬的卷曲装饰、像书法笔势一样的弧形延展切面;爱心本体为完整封闭的一体化实体,不使用外框骨架,不使用中空轮廓"
+      supporting_translation: "将「{secondary_symbol}」转译为丝带般的边缘流线、花瓣小切面或底座压纹，保持温柔节奏"
+      text_style: "文字采用优雅流动、带一点书法气息的立体发光字体,具有立体厚度、浮雕感、柔亮描边、局部内发光、嵌入式结构感,自然嵌入中央实体核心"
+      bottom_node: "加入流线压纹、弯月感切面、珠光徽章、丝带状护片、细腻曲面装饰件"
+      silhouette_language: "圆润、轻盈、包裹、上扬、柔亮的实体爱心结构"

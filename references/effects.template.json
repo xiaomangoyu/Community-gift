@@ -1,0 +1,72 @@
+{
+  "effects": [
+    {
+      "id": "premium_glowing_acrylic_charm",
+      "name": "高级发光亚克力挂件",
+      "status": "draft",
+      "source_prompt": "这里保留原始好 prompt，用于溯源和结构化，不直接拼进新 prompt。",
+      "source_prompt_summary": "一句话总结这个 prompt 为什么容易出好效果。",
+      "reference_images": [
+        "images/premium_glowing_acrylic_charm_01.png"
+      ],
+      "best_for": [
+        "治愈",
+        "可爱",
+        "陪伴",
+        "轻奢"
+      ],
+      "not_for": [
+        "强竞技",
+        "暗黑",
+        "硬核电竞"
+      ],
+      "gift_forms": [
+        "亚克力挂件",
+        "桌面摆件",
+        "收藏徽章"
+      ],
+      "core_effect": [
+        "透明亚克力",
+        "内部微光",
+        "厚实实体边缘",
+        "小尺寸清晰"
+      ],
+      "composition_rules": [
+        "单主体居中",
+        "45度产品图视角",
+        "干净背景",
+        "社群名优先清楚"
+      ],
+      "material_rules": [
+        "透明材质有厚度",
+        "边缘有柔和高光",
+        "避免平面贴纸感"
+      ],
+      "lighting_rules": [
+        "克制内部发光",
+        "轮廓光突出实体边缘"
+      ],
+      "prompt_principles": [
+        "强调 physical collectible gift object",
+        "强调 studio product render",
+        "把符号做成浮雕、镶嵌或亚克力内雕"
+      ],
+      "avoid": [
+        "human face",
+        "portrait",
+        "poster",
+        "busy background",
+        "flat logo",
+        "too much text"
+      ],
+      "evaluation_focus": {
+        "ideal_similarity": 30,
+        "physical_gift_feel": 25,
+        "material_quality": 20,
+        "small_size_readability": 15,
+        "constraint_compliance": 10
+      },
+      "notes": "这里写你对这个效果的主观判断，比如为什么高级、哪里最不能丢。"
+    }
+  ]
+}

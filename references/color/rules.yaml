@@ -1,0 +1,133 @@
+# Color routing rules.
+# Maps host signals → palette_id (resolved against references/color_palettes.json).
+#
+# How rules match:
+#   - Rules are evaluated top-to-bottom; first match wins.
+#   - Each `when:` clause is ANDed; use `or:` for alternatives.
+#   - Match scope:
+#       host.primary_color, host.secondary_color, host.live_vibe,
+#       host.personality, host.host_name, host.community_name,
+#       host.symbols (list), host.notes, host.body_form,
+#       derived.all_colors (primary + secondary joined),
+#       derived.symbol_text (host.symbols joined into one string)
+#
+# How designers add a rule:
+#   1. Add an entry with a unique id + a `when:` block + `apply:` block.
+#   2. `apply.palette_id` must exist in references/color_palettes.json.
+#   3. Optional: `apply.negative_add` adds extra negative prompt terms.
+#   4. Optional: `apply.reason` is a human note that lands in routing_trace.
+
+version: 1
+
+defaults:
+  palette_id: fallback_safe   # `fallback_safe` is generated in code if no palette matches.
+
+rules:
+  # ORDERING NOTE: rules are first-match. Put SPECIFIC rules above GENERIC ones.
+  # e.g. butterfly > wing, hat > wing, crown > battle.
+  # When in doubt, run scripts/run_wells_real.py and inspect routing_trace.json.
+
+  # ----- Black / dark themes get graphite-based palette so they stay visible on black bg.
+  - id: black_theme
+    when:
+      - or:
+          - field: host.primary_color
+            contains_any: ["黑", "black", "dark", "暗", "夜色"]
+          - field: host.secondary_color
+            contains_any: ["黑", "black", "dark", "暗", "夜色"]
+    apply:
+      palette_id: black_safe
+      negative_add: ["pure black product body", "black handle", "glossy black resin as main material"]
+    reason: "black-themed CSV input forces graphite/silver instead of pure black"
+
+  # ----- Hat / sombrero / vintage stage. (specific — keep before wing)
+  - id: hat_vintage
+    when:
+      - field: derived.symbol_text
+        contains_any: ["帽", "hat", "sombrero", "fedora", "patrona", "rooster", "公鸡"]
+    apply:
+      palette_id: hat_vintage
+    reason: "hat brim vintage palette"
+
+  # ----- Butterfly / purple / dreamy. (specific — keep before wing)
+  - id: butterfly_purple
+    when:
+      - or:
+          - field: derived.symbol_text
+            contains_any: ["蝴蝶", "butterfly", "나비"]
+          - field: derived.all_colors
+            contains_any: ["紫", "purple"]
+          - field: host.live_vibe
+            contains_any: ["梦幻"]
+    apply:
+      palette_id: butterfly_purple
+    reason: "butterfly / purple dreamy palette"
+
+  # ----- Crown / battle / competitive vibe. (specific — keep before generic vibe rules)
+  - id: crown_battle
+    when:
+      - or:
+          - field: derived.symbol_text
+            contains_any: ["皇冠", "crown", "queen", "king", "rey"]
+          - field: host.live_vibe
+            contains_any: ["竞技", "battle", "胜利", "高能"]
+          - field: host.content_type
+            contains_any: ["battle", "pk"]
+    apply:
+      palette_id: crown_neon
+    reason: "crown / battle stage palette"
+
+  # ----- Potato / mascot.
+  - id: potato_mascot
+    when:
+      - field: derived.symbol_text
+        contains_any: ["土豆", "potato", "spud", "mascot"]
+    apply:
+      palette_id: potato_warm
+    reason: "warm potato mascot palette"
+
+  # ----- Wing / bird / electric — smoke + pink stage palette. (generic — keep low)
+  # Avoid single-char "羽" — collides with "冠羽" (rooster crest, hat signal).
+  # Avoid "翅膀" alone — collides with butterfly. butterfly_purple above must run first.
+  - id: wing_electric
+    when:
+      - field: derived.symbol_text
+        contains_any: ["羽翼", "wing", "feather", "鸟", "bird", "闪电", "electric", "lightning"]
+    apply:
+      palette_id: wing_dark_pink
+    reason: "winged / electric concept reads best with smoke + pink contrast"
+
+  # ----- Heart / romantic / sweet.
+  - id: romantic_pink
+    when:
+      - or:
+          - field: derived.symbol_text
+            contains_any: ["爱心", "heart", "💕", "💜"]
+          - field: host.live_vibe
+            contains_any: ["甜美", "浪漫", "陪伴", "甜"]
+          - field: host.personality
+            contains_any: ["温柔", "甜"]
+    apply:
+      palette_id: romantic_pink
+    reason: "romantic pink heart palette"
+
+  # ----- Tropical / island / beach.
+  - id: tropical_wave
+    when:
+      - field: derived.symbol_text
+        contains_any: ["海", "wave", "island", "tropical", "普吉", "beach", "椰", "贝壳"]
+    apply:
+      palette_id: tropical_wave
+    reason: "tropical wave palette"
+
+  # ----- Esports / red fire / score chase.
+  - id: esports_red
+    when:
+      - or:
+          - field: host.content_type
+            contains_any: ["电竞", "esports"]
+          - field: derived.symbol_text
+            contains_any: ["fire", "火焰", "score"]
+    apply:
+      palette_id: esports_red
+    reason: "esports / fire palette"

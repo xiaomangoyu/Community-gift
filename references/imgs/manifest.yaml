@@ -1,0 +1,130 @@
+# Reference image manifest.
+#
+# Each entry is a validated (image, prompt) pair. The reference is treated as
+# a multi-dimensional anchor — it contributes not just thematic information,
+# but also orientation / proportion / scale / aesthetic conventions that apply
+# to every host.
+#
+# RECALL MODEL
+# ------------
+# ReferenceRouter scores every reference against host signals, takes top-N
+# (default 3), and falls back to random sampling from the quality:strong pool
+# when all scores are 0. References are passed to Seedream as binary_data; the
+# 1:1 relationship with `role_description` is preserved by writing it into
+# pre_llm_result.input{1,2,3}.
+#
+# SCORING WEIGHTS (in ReferenceRouter)
+#   shape:        3
+#   color:        2
+#   vibe / text:  1 each
+#   quality:strong bonus: +0.5
+#
+# DESIGNER ADD-FLOW
+#   1. Drop <id>.{png,txt} into this folder.
+#   2. Append an entry below with tags + role_description.
+#   3. No code change. Re-run wells; ReferenceRouter picks it up automatically.
+#
+# Fragments (symbol_translation / text_style / bottom_node / mood / palette_hint
+# / material_hint) are NOT stored here anymore. Text scaffolding belongs in
+# references/shape/rules.yaml. The reference image carries the visual half
+# via i2i; role_description tells Seedream what each image contributes.
+
+version: 2
+
+references:
+  - id: butterfly_korean
+    image: Butterfly.png
+    prompt: Butterfly.txt
+    quality: strong
+    notes: "韩文 + 蝶翼 + 紫色;非拉丁文字成功嵌入实体爱心核心"
+    tags:
+      shape: [butterfly, wing, heart_silhouette, symmetric]
+      color: [purple, lavender, pearl, white]
+      material: [translucent_resin, pearlescent_lacquer, jelly_crystal]
+      vibe: [dreamy, soft, idol_support, romantic]
+      text: [non_latin, korean, embedded_in_core, 3d_glow]
+    role_description: >-
+      A premium idol lightstick on pure black at a 45-degree right-facing hero
+      angle. The lamp head is a one-piece solid heart with NO outer frame and
+      NO hollow outline, flanked by symmetric translucent butterfly-wing
+      silhouettes. Non-Latin Korean glyphs are embedded directly into the
+      solid central core with 3D bevel, soft rim glow, and pearlescent
+      lacquer. Palette is purple / lavender / pearl-white. This image
+      contributes:
+      orientation (45-degree right hero shot),
+      lamp-head structure (one-piece solid heart with no outer frame),
+      wing-attached silhouette extension,
+      non-Latin glyph rendering inside a solid core.
+
+  - id: heart_arabic_romance
+    image: Cream_heart.png
+    prompt: Cream_heart.txt
+    quality: strong
+    notes: "阿拉伯文字 + 浪漫异域气质;一体实体爱心,书法笔势装饰"
+    tags:
+      shape: [heart, solid_one_piece, flowing_decoration]
+      color: [pink, smoke_pink, rose, pearl, champagne]
+      material: [pearlescent_resin, soft_jelly_crystal, mirror_trim]
+      vibe: [romantic, elegant, exotic, gentle, dreamy]
+      text: [non_latin, arabic, calligraphy, embedded_in_core, 3d_glow]
+    role_description: >-
+      A premium idol lightstick on pure black at a 45-degree right-facing hero
+      angle. The lamp head is a fully closed one-piece solid heart with
+      flowing surface curvature and calligraphy-like ribbon ornaments
+      sculpted INTO the heart body, not as an outer frame. Non-Latin Arabic
+      glyphs are embedded into the solid center with calligraphic 3D
+      typography, soft inner glow, and pearlescent rim. Palette is rose /
+      smoke pink / pearl / champagne. This image contributes:
+      gentle exotic romantic mood,
+      calligraphic / non-Latin script handling,
+      a fully closed solid-heart silhouette (no frame, no hollow),
+      flowing surface decoration that lives inside the heart body.
+
+  - id: mascot_cherry_jelly
+    image: Cherry.png
+    prompt: Cherry.txt
+    quality: strong
+    notes: "两个 mascot 融合(樱桃+龟壳)+ 果冻甜系材质;短拉丁文嵌入"
+    tags:
+      shape: [mascot, fruit_cluster, shell, rounded_dome, dual_motif]
+      color: [cherry_red, cream, mint_green, pistachio, pearl_white]
+      material: [jelly_resin, cream_enamel, pearlescent_trim]
+      vibe: [cute, sweet, playful, soft, idol_support, designer_toy]
+      text: [latin, short, embedded_in_core, 3d_glow, candy_emboss]
+    role_description: >-
+      A premium idol lightstick on pure black at a 45-degree right-facing hero
+      angle. The lamp head is a one-piece solid jelly form that fuses two
+      mascot motifs (cherry domes on top, green turtle-shell curvature on the
+      lower half) — they share one outline rather than being two separate
+      objects pasted together. Short Latin text is embedded into the central
+      core with 3D candy-bevel typography and soft inner glow. Palette is
+      cherry red / cream / mint green / pearl. This image contributes:
+      cute jelly material world,
+      how to fuse two thematic motifs into one silhouette,
+      short Latin glyph handling with candy-emboss typography,
+      sweet designer-toy collectible quality.
+
+  - id: purple_heart_y2k
+    image: Purple_heart.png
+    prompt: Purple_heart.txt
+    quality: strong
+    notes: "紫色一体实体爱心 + Y2K 甜感 + 英文嵌入;包裹式心形体积"
+    tags:
+      shape: [heart, solid_one_piece, wrapped_layers]
+      color: [purple, grape, lavender, pearl, silver_white]
+      material: [jelly_resin, pearlescent_lacquer, crystal_core]
+      vibe: [gentle, dreamy, sweet, companionship, idol_support]
+      text: [latin, handwriting, embedded_in_core, 3d_glow, y2k_emboss]
+    role_description: >-
+      A premium idol lightstick on pure black at a 45-degree right-facing hero
+      angle. The lamp head is a closed one-piece solid heart with soft
+      pillow-volume and wrapped layered cross-sections — the heart silhouette
+      is built from stacked rounded slices, not from an outer frame. Latin
+      handwriting-style text is embedded into the central core with 3D
+      handwriting typography, soft inner glow, and crystal-jelly emboss
+      effect. Palette is deep purple / grape / lavender / pearl. This image
+      contributes:
+      gentle handwritten Latin glyph treatment,
+      wrapped/layered heart cross-section structure,
+      soft pillow-volume one-piece heart body (no outer frame),
+      idol-support warmth.
