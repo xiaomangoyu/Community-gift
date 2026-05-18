@@ -97,7 +97,7 @@ class ReferenceRouter:
 
         picks: list[ReferencePick] = []
         fallback_used = False
-        positive = [item for item in scored if item[0] > 0]
+        positive = [item for item in scored if item[1]]
 
         if positive:
             for score, matched, entry in positive[: self.top_n]:
@@ -136,6 +136,8 @@ class ReferenceRouter:
                         "role_description": p.role_description,
                         "score": round(p.score, 2),
                         "matched_tags": p.matched_tags,
+                        "matched_dimensions": sorted(p.matched_tags),
+                        "weak_text_only_match": sorted(p.matched_tags) == ["text"],
                     }
                     for p in picks
                 ],
@@ -206,23 +208,26 @@ def _dedupe(values: list[str]) -> list[str]:
 
 def _score(entry: dict[str, Any], host_signals: dict[str, list[str]]) -> tuple[float, dict[str, list[str]]]:
     ref_tags = entry.get("tags") or {}
-    score = 0.0
+    semantic_score = 0.0
     matched: dict[str, list[str]] = {}
     for dim, weight in WEIGHTS.items():
         host_terms = {t.lower() for t in host_signals.get(dim, [])}
         ref_terms = {str(t).lower() for t in ref_tags.get(dim, [])}
         hit = sorted(host_terms & ref_terms)
         if hit:
-            score += weight * len(hit)
+            semantic_score += weight * len(hit)
             matched[dim] = hit
-    if str(entry.get("quality", "")).lower() == "strong":
-        score += STRONG_QUALITY_BONUS
-    return score, matched
+    if not matched:
+        return 0.0, matched
+    quality_bonus = STRONG_QUALITY_BONUS if str(entry.get("quality", "")).lower() == "strong" else 0.0
+    return semantic_score + quality_bonus, matched
 
 
 def _describe_match(score: float, matched: dict[str, list[str]], entry: dict[str, Any]) -> str:
     if not matched:
-        return f"score={score:.1f} (no positive tag matches)"
+        quality = str(entry.get("quality", "")).lower()
+        suffix = "; strong quality bonus held for ranking only after a real tag match" if quality == "strong" else ""
+        return f"score={score:.1f} (no positive tag matches{suffix})"
     parts = [f"{dim}:{','.join(tags)}" for dim, tags in matched.items()]
     return f"score={score:.1f} | " + " | ".join(parts)
 

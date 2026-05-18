@@ -190,12 +190,21 @@ _HOST_AVATAR_ROLE = (
 )
 
 
+def _include_host_avatar_reference() -> bool:
+    return os.getenv("INCLUDE_HOST_AVATAR_REFERENCE", "true").lower() not in {
+        "0",
+        "false",
+        "no",
+        "off",
+    }
+
+
 def _assemble_reference_pairs(host: HostInput, reference_decision) -> list[tuple[str, str]]:
     """Avatar first (when present), then lightstick references from the router."""
 
     pairs: list[tuple[str, str]] = []
     avatar = (host.host_image or "").strip()
-    if avatar and not avatar.startswith(("http://", "https://", "data:")):
+    if _include_host_avatar_reference() and avatar and not avatar.startswith(("http://", "https://", "data:")):
         from pathlib import Path as _Path
 
         if _Path(avatar).exists():

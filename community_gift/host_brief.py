@@ -61,6 +61,7 @@ class RetrievalIntent(BaseModel):
 def derive_retrieval_intent(brief: "HostBrief") -> RetrievalIntent:
     """Default intent: mirror brief tags. Eval/repair may rewrite this."""
 
+    avoid_scripts = _avoid_scripts_for(brief.script_kind)
     return RetrievalIntent(
         row_id=brief.row_id,
         shape_anchors=list(brief.shape_tags),
@@ -68,8 +69,12 @@ def derive_retrieval_intent(brief: "HostBrief") -> RetrievalIntent:
         material_anchors=list(brief.material_tags),
         vibe_anchors=list(brief.vibe_tags),
         text_anchors=list(brief.text_tags),
-        avoid_text_scripts=[],
-        notes="",
+        avoid_text_scripts=avoid_scripts,
+        notes=(
+            f"avoid non-target scripts for {brief.script_kind} text"
+            if avoid_scripts
+            else ""
+        ),
     )
 
 
@@ -87,7 +92,8 @@ _SHAPE_INFERENCE: dict[str, list[str]] = {
     "mascot": ["土豆", "potato", "mascot", "圆润", "spud"],
     "shell": ["龟壳", "shell", "turtle"],
     "fruit_cluster": ["樱桃", "cherry", "果"],
-    "bird": ["鸟", "bird", "feather"],
+    "bird": ["鸟", "bird", "feather", "乌鸦", "黑鸟", "crow", "raven"],
+    "electric": ["闪电", "电光", "electric", "lightning", "thunderbolt"],
 }
 
 _COLOR_INFERENCE: dict[str, list[str]] = {
@@ -156,8 +162,12 @@ class HostBrief(BaseModel):
     all_colors: str = ""
 
     # Vibe / context
+    content_type: str = ""
     live_vibe: str = ""
     personality: str = ""
+    recommended_output_type: str = ""
+    body_form: str = ""
+    mapping_reason: str = ""
     banned_elements: list[str] = Field(default_factory=list)
     notes: str = ""
 
@@ -193,14 +203,14 @@ class HostBrief(BaseModel):
                 "primary_color": self.primary_color,
                 "secondary_color": self.secondary_color,
                 "symbols": list(self.symbols_raw),
+                "content_type": self.content_type,
                 "live_vibe": self.live_vibe,
                 "personality": self.personality,
+                "recommended_output_type": self.recommended_output_type,
+                "body_form": self.body_form,
+                "mapping_reason": self.mapping_reason,
                 "banned_elements": list(self.banned_elements),
                 "notes": self.notes,
-                # Empty placeholders kept for any rule that still references
-                # them via host.<field>. Empty string evaluates falsy.
-                "body_form": "",
-                "content_type": "",
             },
             "derived": {
                 "primary_symbol": self.primary_symbol,
@@ -301,8 +311,12 @@ def build_host_brief(host: HostInput, vision: HostVisionBrief | None = None) -> 
         primary_color=primary_color,
         secondary_color=secondary_color,
         all_colors=all_colors,
+        content_type=host.content_type,
         live_vibe=host.live_vibe,
         personality=host.personality,
+        recommended_output_type=host.recommended_output_type,
+        body_form=host.body_form,
+        mapping_reason=host.mapping_reason,
         banned_elements=list(host.banned_elements),
         notes=host.notes,
         shape_tags=shape_tags,
@@ -462,6 +476,21 @@ def _analyze_text(host_name: str) -> tuple[str, bool, int, list[str]]:
     text_tags.append("short" if char_count <= 12 else "long")
 
     return script_kind, has_emoji, char_count, _dedupe(text_tags)
+
+
+def _avoid_scripts_for(script_kind: str) -> list[str]:
+    """Scripts the image model should avoid for a known target text script."""
+
+    script = (script_kind or "").lower()
+    if script == "latin":
+        return ["korean", "arabic", "chinese", "japanese", "cyrillic", "thai", "devanagari"]
+    if script == "korean":
+        return ["arabic", "chinese", "japanese", "latin", "cyrillic", "thai", "devanagari"]
+    if script == "arabic":
+        return ["korean", "chinese", "japanese", "latin", "cyrillic", "thai", "devanagari"]
+    if script == "chinese":
+        return ["korean", "arabic", "latin", "cyrillic", "thai", "devanagari"]
+    return []
 
 
 def _is_emoji(char: str) -> bool:

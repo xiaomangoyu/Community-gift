@@ -62,7 +62,7 @@ rules:
   - id: bird_wing
     when:
       - field: derived.primary_symbol_text
-        contains_any: ["羽翼", "wing", "feather", "鸟", "bird", "翅膀"]
+        contains_any: ["羽翼", "wing", "feather", "鸟", "bird", "翅膀", "乌鸦", "黑鸟", "crow", "raven"]
     apply:
       silhouette: "winged lamp head"
       theme_title: "暗羽电光感 × 甜酷舞台感 × 偶像应援收藏风"

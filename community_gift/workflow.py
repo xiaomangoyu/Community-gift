@@ -139,6 +139,9 @@ class CommunityGiftWorkflow:
         _write_composite_inputs(
             self.output_dir / "composite_inputs", designs, briefs, intents
         )
+        _write_debug_cards(
+            self.output_dir / "debug_cards", designs, briefs, eval_results, intents
+        )
         _write_vision_briefs(self.output_dir / "host_visions", vision_briefs)
         return designs
 
@@ -425,6 +428,131 @@ def _write_vision_briefs(output_dir: Path, vision_briefs: dict) -> None:
         )
 
 
+def _write_debug_cards(
+    output_dir: Path,
+    designs: list[GiftDesign],
+    briefs: list[HostBrief],
+    eval_results: list[BriefEvalResult] | None = None,
+    intents: list[RetrievalIntent] | None = None,
+) -> None:
+    """One readable markdown card per host for routing/design review."""
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    brief_by_row = {b.row_id: b for b in briefs}
+    eval_by_row = {r.row_id: r for r in (eval_results or [])}
+    intent_by_row = {i.row_id: i for i in (intents or [])}
+
+    for design in designs:
+        brief = brief_by_row.get(design.row_id)
+        eval_result = eval_by_row.get(design.row_id)
+        intent = intent_by_row.get(design.row_id)
+        trace = design.routing_trace or {}
+        color = trace.get("color", {})
+        shape = trace.get("shape", {})
+        reference = trace.get("reference", {})
+        picks = (reference.get("fields") or {}).get("picks", []) or []
+
+        lines = [
+            f"# {design.row_id}. {design.host_name or design.community_name}",
+            "",
+            "## Identity",
+            f"- community_name: {design.community_name}",
+            f"- exact_text: {design.text_plan.exact_text}",
+            f"- text_mode: {design.text_plan.mode}",
+            "",
+        ]
+
+        if brief is not None:
+            lines.extend(
+                [
+                    "## Brief",
+                    f"- primary_symbol: {brief.primary_symbol}",
+                    f"- secondary_symbol: {brief.secondary_symbol}",
+                    f"- colors: {brief.primary_color} / {brief.secondary_color}",
+                    f"- shape_tags: {_join(brief.shape_tags)}",
+                    f"- color_tags: {_join(brief.color_tags)}",
+                    f"- material_tags: {_join(brief.material_tags)}",
+                    f"- vibe_tags: {_join(brief.vibe_tags)}",
+                    f"- text_tags: {_join(brief.text_tags)}",
+                    "",
+                ]
+            )
+            if brief.vision is not None:
+                lines.extend(
+                    [
+                        "## Vision",
+                        f"- image_source: {brief.vision.image_source}",
+                        f"- style_pitch: {brief.vision.style_pitch}",
+                        f"- lamp_head_silhouette: {brief.vision.lamp_head_silhouette}",
+                        f"- palette: {brief.vision.palette.family} | {brief.vision.palette.main_color} / {brief.vision.palette.secondary_color}",
+                        f"- materials: {brief.vision.materials.main} + {brief.vision.materials.supporting}",
+                        f"- handle: {brief.vision.handle.main_material}; {brief.vision.handle.bottom_cap}",
+                        "",
+                    ]
+                )
+
+        if eval_result is not None:
+            lines.extend(["## Eval / Repair", f"- passed: {eval_result.passed}"])
+            if eval_result.applied_fixes:
+                lines.append(f"- applied_fixes: {_join(eval_result.applied_fixes)}")
+            if eval_result.issues:
+                for issue in eval_result.issues:
+                    lines.append(
+                        f"- {issue.severity}: `{issue.rule_id}` on `{issue.field}` - {issue.detail}"
+                    )
+            else:
+                lines.append("- issues: none")
+            lines.append("")
+
+        if intent is not None:
+            lines.extend(
+                [
+                    "## Retrieval Intent",
+                    f"- shape_anchors: {_join(intent.shape_anchors)}",
+                    f"- color_anchors: {_join(intent.color_anchors)}",
+                    f"- material_anchors: {_join(intent.material_anchors)}",
+                    f"- vibe_anchors: {_join(intent.vibe_anchors)}",
+                    f"- text_anchors: {_join(intent.text_anchors)}",
+                    f"- avoid_text_scripts: {_join(intent.avoid_text_scripts)}",
+                    "",
+                ]
+            )
+
+        lines.extend(
+            [
+                "## Routing",
+                f"- color: {color.get('matched_rule_id', '')}",
+                f"- shape: {shape.get('matched_rule_id', '')}",
+                f"- reference: {reference.get('matched_rule_id', '')}",
+            ]
+        )
+        if picks:
+            for pick in picks:
+                weak = " (weak text-only match)" if pick.get("weak_text_only_match") else ""
+                dims = _join(pick.get("matched_dimensions") or [])
+                lines.append(
+                    f"- reference_pick: {pick.get('id', '')}{weak}; score={pick.get('score', '')}; dims={dims}"
+                )
+        else:
+            lines.append("- reference_pick: none")
+        lines.append("")
+
+        lines.extend(
+            [
+                "## Final",
+                f"- prompt_chars: {len(design.seedance_prompt)}",
+                f"- negative_prompt_chars: {len(design.seedance_negative_prompt)}",
+                f"- reference_pairs: {len(design.reference_pairs)}",
+            ]
+        )
+
+        slug = slugify(design.host_name) or f"row{design.row_id}"
+        (output_dir / f"{design.row_id:03d}__{slug}.md").write_text(
+            "\n".join(lines) + "\n",
+            encoding="utf-8",
+        )
+
+
 def _write_host_briefs(
     output_dir: Path,
     briefs: list[HostBrief],
@@ -459,6 +587,11 @@ def _write_host_briefs(
                 json.dumps(intent.model_dump(), ensure_ascii=False, indent=2),
                 encoding="utf-8",
             )
+
+
+def _join(values) -> str:
+    items = [str(value) for value in (values or []) if str(value)]
+    return ", ".join(items) if items else "-"
 
 
 def _failed_generation_result(design: GiftDesign, exc: Exception) -> GenerationResult:
