@@ -402,11 +402,9 @@ def _build_prompt(slots: dict) -> str:
     """
 
     colors = "、".join(slots["colors"])
-    materials = "、".join(slots["materials"])
-    anchor_line = _format_anchor_line(slots.get("intent_anchor_terms") or [])
-    lighting_phrase = (
-        slots.get("lighting") or "清晰主光、边缘轮廓光、晶体折射、软硬高光对比、局部内发光"
-    )
+    materials = "、".join(_soften_material_terms(slots["materials"]))
+    anchor_line = _format_anchor_line(_soften_anchor_terms(slots.get("intent_anchor_terms") or []))
+    lighting_phrase = "柔和棚拍主光、克制边缘描光、低反射材质对比、中央文字小范围内发光"
     fusion_note = slots.get("fusion_note") or ""
     fusion_clause = f"{fusion_note}。" if fusion_note else ""
     secondary_clause = (
@@ -421,6 +419,8 @@ def _build_prompt(slots: dict) -> str:
     handle_phrase = slots.get("handle_phrase") or (
         f"握柄主体延续主题材质,与灯头形成同语义的视觉一体化,避免出现纯白通用塑料管造型。"
     )
+    handle_phrase = _soften_handle_phrase(handle_phrase)
+    bottom_node = _soften_handle_phrase(slots["bottom_node"])
 
     return f"""**构图与朝向(硬约束)**：纯黑棚拍背景，1:1 正方形画面。整支应援棒呈固定 45° 倾斜，**灯头在画面右上方、握柄从右上向左下延伸**(整支产品沿画面对角线方向)，灯头中心位于画面右上 40% 区域，底盖位于画面左下 35% 区域。**整支应援棒高度占画面 70-80%，顶端与底端各保留约 10% 黑色边距，左右各保留约 12-15% 黑色边距**。灯头、连接件、完整握柄、底部节点都必须完整可见，不允许任何部分触碰或超出画面边缘。
 
@@ -432,7 +432,7 @@ def _build_prompt(slots: dict) -> str:
 
 整体配色采用 {colors}（主色锚点「{slots['color_anchor']}」，来自 {slots['palette_name']}）。背景为纯黑棚拍质感，产品本体、手柄、外壳和大面积装饰不能是纯黑；如主题需要黑色，只用烟灰、枪灰、银灰、珠光灰或深色透明树脂表达，保留清楚的灰色、银色或彩色边缘高光，方便从黑底抠图。
 
-灯头材质以 {materials} 为主，整体强调圆润、清透、精致、收藏级3D产品质感。打光强调{lighting_phrase}，重点表现真实材质厚度、清晰倒角与软硬高光对比。
+灯头材质以 {materials} 为主，整体强调圆润实体厚度、材质对比、精致倒角、收藏级产品质感。亮面硬质饰件仅限极细薄边、微小徽章或少量连接点；皮革/织物转译为连续哑光包覆、浅压纹和干净表面。打光强调{lighting_phrase}，重点表现真实材质厚度、清晰倒角、柔和受控高光，避免过曝核心、廉价塑料玩具感和大面积镜面反射。
 
 主题解构：{slots['symbol_translation']}{secondary_clause}。{fusion_clause}灯头本体为完整封闭的一体化实体，不使用外框骨架，不使用心形外框结构，不使用中空轮廓，不出现悬空骨架感。
 
@@ -440,11 +440,11 @@ def _build_prompt(slots: dict) -> str:
 
 文字「{slots['display_text']}」自然嵌入灯头中央实体核心。{slots['text_style']}。只允许出现这一个主文字，不要出现伪字母、错字、额外口号、副标题、手柄文字、外接文字牌、顶部文字牌或悬浮标题。
 
-手柄设计：{handle_phrase}手柄保持**短粗握把比例(高度约为灯头高度的 60-75%，宽度饱满)**，不能是通用细长白色塑料管造型，也不能是细长法杖造型。底部装饰为{slots['bottom_node']}，与手柄整体协调。
+手柄设计：{handle_phrase}手柄保持**短粗握把比例(高度约为灯头高度的 60-75%，宽度饱满)**，不能是通用细长白色塑料管造型，也不能是细长法杖造型。底部装饰为{bottom_node}，与手柄整体协调。
 
 整体气质：{slots['mood']}，带有偶像周边收藏感。
 
-整体强调：收藏级产品渲染、强3D体积感、丰富明暗层次、文字与中央核心局部发光、整支棒体不做全局霓虹泛光、干净商业海报感。整支打call棒必须完整入画，灯头、连接件、完整手柄和底部节点都要可见，产品像悬浮在纯黑摄影棚中，不接触任何地面或台面。"""
+整体强调：收藏级实体产品渲染、真实产品厚度、克制明暗层次、文字与中央核心小范围局部发光、整支棒体不做全局霓虹泛光、不做过曝发光核心、干净棚拍产品感。整支打call棒必须完整入画，灯头、连接件、完整手柄和底部节点都要可见，产品像悬浮在纯黑摄影棚中，不接触任何地面或台面。"""
 
 
 def _build_negative_prompt(slots: dict) -> str:
@@ -570,6 +570,22 @@ def _build_negative_prompt(slots: dict) -> str:
         "industrial component assembly",
         "sharp polygonal facets",
         "angular faceted body",
+        "overexposed glow",
+        "excessive bloom",
+        "excessive specular highlights",
+        "mirror-like reflections",
+        "cheap glossy plastic",
+        "AI-looking glossy render",
+        "over-polished toy render",
+        "excessive metal trim",
+        "large chrome surfaces",
+        "heavy metal armor",
+        "too many metal rings",
+        "dense stitching",
+        "visible sewing seams",
+        "thick leather straps",
+        "tactical strap details",
+        "sports guard clutter",
     ]
     avoid_scripts = slots.get("intent_avoid_text_scripts") or []
     script_negatives = _negatives_from_avoid_scripts(avoid_scripts)
@@ -602,6 +618,76 @@ def _format_anchor_line(terms: list[str]) -> str:
     if not terms:
         return ""
     return f" 设计语言锚点参考:{', '.join(terms)}（用于内部一致性约束,不作为字面文字呈现）。"
+
+
+def _soften_anchor_terms(terms: list[str]) -> list[str]:
+    """Remove anchor hints that tend to overproduce armor/stitch/chrome detail."""
+
+    blocked = {
+        "stitched_leather",
+        "mirror_chrome",
+        "metal_family",
+        "metallic_trim",
+        "glossy_metal",
+        "leather_wrap",
+    }
+    replacements = {
+        "hard_soft_contrast": "soft_matte_contrast",
+        "gloss_vs_matte": "soft_matte_contrast",
+    }
+    softened: list[str] = []
+    for term in terms:
+        key = str(term).strip()
+        if not key or key in blocked:
+            continue
+        softened.append(replacements.get(key, key))
+    return _unique(softened)
+
+
+def _soften_material_terms(materials: list[str]) -> list[str]:
+    """Keep material intent, but reduce AI-ish chrome/stitch/armor triggers."""
+
+    replacements = {
+        "镜面铬金属": "低反射深灰硬漆",
+        "拉丝铝金属": "低反射阳极氧化漆面",
+        "拉丝古金属": "哑光古金薄饰边",
+        "做旧黄铜": "哑光古铜薄饰边",
+        "缝纫皮革": "哑光软皮包覆",
+        "细腻缝纫皮革": "哑光软皮包覆",
+        "雾面缝纫皮革": "雾面软皮包覆",
+        "黑色丝绒包覆件": "黑色丝绒触感包覆",
+    }
+    softened: list[str] = []
+    for material in materials:
+        text = str(material).strip()
+        if not text:
+            continue
+        for src, dst in replacements.items():
+            text = text.replace(src, dst)
+        softened.append(text)
+    return _unique(softened)
+
+
+def _soften_handle_phrase(text: str) -> str:
+    """Tone down stitch/metal/strap language from vision-derived handle copy."""
+
+    replacements = {
+        "缝纫皮革": "哑光软皮",
+        "缝线皮革": "哑光软皮",
+        "细缝线": "细浅压纹",
+        "缝线": "浅压纹",
+        "车缝": "浅压纹",
+        "镜面金属饰边": "低反射薄饰边",
+        "金属折片纹带": "浅浮雕折片纹带",
+        "金属护片": "低反射小护片",
+        "银色护片": "低反射银灰小护片",
+        "粗金属": "粗硬",
+        "绑带": "柔和包覆带",
+        "护具": "圆润护片",
+    }
+    for src, dst in replacements.items():
+        text = text.replace(src, dst)
+    return text
 
 
 # ---------------------------------------------------------------------------

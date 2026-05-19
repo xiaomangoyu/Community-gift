@@ -82,20 +82,20 @@ class ReferenceRouter:
             )
 
         host_signals = _extract_host_signals(context)
+        avoid_text_scripts = _avoid_text_scripts(context)
         scored: list[tuple[float, dict[str, list[str]], dict[str, Any]]] = []
         trace: list[RouteTraceEntry] = []
         for entry in self.references:
             score, matched = _score(entry, host_signals)
             weak_text_only = _is_weak_text_only_match(matched)
             weak_generic = _is_weak_generic_match(matched)
+            script_conflict = _has_avoided_text_script(entry, avoid_text_scripts)
             trace.append(
                 RouteTraceEntry(
                     rule_id=entry["id"],
-                    matched=score > 0 and not weak_generic,
-                    reason=_describe_match(score, matched, entry, weak_generic),
-                    skipped_because=_weak_reason(matched)
-                    if weak_generic
-                    else "",
+                    matched=score > 0 and not weak_generic and not script_conflict,
+                    reason=_describe_match(score, matched, entry, weak_generic, script_conflict),
+                    skipped_because=_skip_reason(matched, script_conflict),
                 )
             )
             scored.append((score, matched, entry))
@@ -104,7 +104,13 @@ class ReferenceRouter:
 
         picks: list[ReferencePick] = []
         fallback_used = False
-        positive = [item for item in scored if item[1] and not _is_weak_generic_match(item[1])]
+        positive = [
+            item
+            for item in scored
+            if item[1]
+            and not _is_weak_generic_match(item[1])
+            and not _has_avoided_text_script(item[2], avoid_text_scripts)
+        ]
 
         if positive:
             for score, matched, entry in positive[: self.top_n]:
@@ -118,7 +124,7 @@ class ReferenceRouter:
                     exclude=already,
                     k=self.top_n - len(picks),
                     seed=_seed_for_context(context),
-                    avoid_text_scripts=_avoid_text_scripts(context),
+                    avoid_text_scripts=avoid_text_scripts,
                 )
                 for entry in filler:
                     picks.append(_to_pick(entry, 0.0, {}))
@@ -129,7 +135,7 @@ class ReferenceRouter:
                 exclude=set(),
                 k=self.top_n,
                 seed=_seed_for_context(context),
-                avoid_text_scripts=_avoid_text_scripts(context),
+                avoid_text_scripts=avoid_text_scripts,
             )
             for entry in filler:
                 picks.append(_to_pick(entry, 0.0, {}))
@@ -268,18 +274,33 @@ def _weak_reason(matched: dict[str, list[str]]) -> str:
     return "weak generic vibe + latin/length match"
 
 
+def _skip_reason(matched: dict[str, list[str]], script_conflict: bool) -> str:
+    reasons: list[str] = []
+    if script_conflict:
+        reasons.append("reference text script conflicts with target script")
+    if _is_weak_generic_match(matched):
+        reasons.append(_weak_reason(matched))
+    return "; ".join(reasons)
+
+
 def _describe_match(
     score: float,
     matched: dict[str, list[str]],
     entry: dict[str, Any],
     weak_generic: bool = False,
+    script_conflict: bool = False,
 ) -> str:
     if not matched:
         quality = str(entry.get("quality", "")).lower()
         suffix = "; strong quality bonus held for ranking only after a real tag match" if quality == "strong" else ""
         return f"score={score:.1f} (no positive tag matches{suffix})"
     parts = [f"{dim}:{','.join(tags)}" for dim, tags in matched.items()]
-    suffix = f" | ignored as {_weak_reason(matched)}" if weak_generic else ""
+    suffix_parts: list[str] = []
+    if script_conflict:
+        suffix_parts.append("ignored due to target script conflict")
+    if weak_generic:
+        suffix_parts.append(f"ignored as {_weak_reason(matched)}")
+    suffix = " | " + " | ".join(suffix_parts) if suffix_parts else ""
     return f"score={score:.1f} | " + " | ".join(parts) + suffix
 
 

@@ -137,7 +137,7 @@ references:
     quality: strong
     notes: "电竞拳击 + 紫绿霓虹 + 护具绑带;适合高能竞技/PK/战队感"
     tags:
-      shape: [heart, boxing_glove, glove, electric, lightning, armor, wrapped_layers]
+      shape: [boxing_glove, glove, electric, lightning, armor, wrapped_layers]
       color: [purple, neon_green, green, electric_blue, black, silver]
       material: [glossy_resin, neon_tube, leather_wrap, hard_plastic, metallic_trim]
       vibe: [battle, esports, energetic, futuristic, powerful, idol_support, street]
@@ -145,15 +145,16 @@ references:
     role_description: >-
       A premium idol lightstick on pure black at a 45-degree right-facing hero
       angle. The lamp head is a heart-core structure wrapped by stylized
-      boxing-glove armor, padded sports guards, neon tubes, and athletic
-      strap details. Palette is electric purple / neon green / cyan blue /
+      boxing-glove volume, rounded sports-padding masses, neon tubes, and a
+      few soft wrap bands. Avoid tactical strap clutter or heavy armor.
+      Palette is electric purple / neon green / cyan blue /
       black / silver. Short Latin text is embedded inside the dark central
       heart core with sharp esports-logo typography and blue inner glow. This
       image contributes:
       high-energy esports and boxing equipment language,
-      padded glove / guard volumes attached around a heart lamp head,
+      padded glove volumes attached around a heart lamp head,
       neon purple-green competitive palette,
-      strap-wrapped handle and armor-like bottom node.
+      smooth wrapped handle and compact sporty bottom node.
 
   - id: pink_cowhair_glam
     image: Cowhair.png
@@ -161,7 +162,7 @@ references:
     quality: strong
     notes: "粉色长毛 + 牛角 + 甜辣华丽感;适合粉色/毛绒/角/美妆摇滚气质"
     tags:
-      shape: [heart, horn, cow_horn, fur, hair, spike, flowing_decoration]
+      shape: [horn, cow_horn, fur, hair, spike, flowing_decoration]
       color: [pink, hot_pink, rose, pearl, white, silver]
       material: [long_fur, crystal_core, pearlescent_resin, metallic_trim, glossy_metal]
       vibe: [glam, sweet_cool, edgy, romantic, dreamy, idol_support, fashion]
@@ -169,16 +170,16 @@ references:
     role_description: >-
       A premium idol lightstick on pure black at a 45-degree right-facing hero
       angle. The lamp head is a pink crystal heart framed by pearl-white
-      metallic curves, surrounded by oversized soft pink long-fur volume and
+      pearl-white low-reflection curves, surrounded by oversized soft pink long-fur volume and
       silver cow-horn silhouettes. The connector uses a spiked collar motif
-      with small heart studs and sharp crescent guards. Palette is bubblegum
+      with a few small heart studs and restrained crescent details. Palette is bubblegum
       pink / hot pink / pearl white / silver. Short Latin text is embedded in
       the central pink crystal core with ornate gothic-glam 3D glow. This
       image contributes:
       soft fur as an outer silhouette extension,
       horned sweet-glam identity without becoming a literal animal head,
       pink crystal heart core,
-      contrast between plush texture and polished metal spikes.
+      contrast between plush texture and small polished accents.
 
   - id: dragon_empire_lightning
     image: Dragon.png
@@ -186,7 +187,7 @@ references:
     quality: strong
     notes: "紫金龙鳞 + 闪电 + 帝国权杖感;适合龙/雷电/霸气/幻想装备"
     tags:
-      shape: [heart, dragon, scale, electric, lightning, horn, crest, armor]
+      shape: [dragon, scale, electric, lightning, horn, crest, armor]
       color: [purple, gold, yellow, black, electric_yellow]
       material: [crystal_core, metallic_trim, glossy_resin, neon_tube, faceted_crystal]
       vibe: [battle, powerful, royal, fantasy, energetic, idol_support, dramatic]
@@ -194,13 +195,13 @@ references:
     role_description: >-
       A premium idol lightstick on pure black at a 45-degree right-facing hero
       angle. The lamp head is a purple-and-gold heart-frame power core
-      surrounded by faceted dragon-scale armor, yellow lightning bolts, and
+      surrounded by rounded dragon-scale relief, yellow lightning bolts, and
       violet electric arcs. The handle reads like a fantasy empire scepter,
       with a stylized dragon-head bottom node, curled horn details, and
-      crystalline purple armor. Palette is royal purple / electric yellow /
+      crystalline purple raised panels. Palette is royal purple / electric yellow /
       gold / black. Short Latin text is embedded in the central dark-purple
       core with glowing gold script typography. This image contributes:
-      dragon-scale armor wrapped around a heart lamp head,
+      dragon-scale relief wrapped around a heart lamp head,
       lightning-bolt silhouette extensions,
       purple-gold royal fantasy mood,
       scepter-like vertical proportion with dragon-head bottom detail.
