@@ -66,15 +66,16 @@ def build_template_first_design(
         brief = build_host_brief(host)
     if intent is None:
         intent = derive_retrieval_intent(brief)
-    slots, color_decision, shape_decision, reference_decision = _extract_slots(brief, intent)
+    slots, color_decision, shape_decision, reference_decision = _extract_slots(host, brief, intent)
 
     text_plan = TextRenderPlan(
         mode="one_shot_text",
         exact_text=slots["display_text"],
         sanitized_text=slots["display_text"],
-        reason="template-first mode requires the streamer name inside the lamp-head shape",
+        reason=slots.get("text_policy_reason")
+        or "template-first mode renders the selected exact text inside the lamp-head shape",
         max_lines=2 if len(slots["display_text"].replace(" ", "")) > 10 else 1,
-        nameplate_instruction="exact streamer name inside the central lamp-head nameplate",
+        nameplate_instruction="exact selected text inside the central lamp-head nameplate",
     )
     concept = DesignConcept(
         main_proposition=(
@@ -194,7 +195,7 @@ _HOST_AVATAR_ROLE = (
 
 
 def _include_host_avatar_reference() -> bool:
-    return os.getenv("INCLUDE_HOST_AVATAR_REFERENCE", "true").lower() not in {
+    return os.getenv("INCLUDE_HOST_AVATAR_REFERENCE", "false").lower() not in {
         "0",
         "false",
         "no",
@@ -220,7 +221,7 @@ def _assemble_reference_pairs(host: HostInput, reference_decision) -> list[tuple
     return pairs
 
 
-def _extract_slots(brief: HostBrief, intent: RetrievalIntent):
+def _extract_slots(host: HostInput, brief: HostBrief, intent: RetrievalIntent):
     primary_symbol = brief.primary_symbol
     secondary_symbol = brief.secondary_symbol
 
@@ -235,7 +236,7 @@ def _extract_slots(brief: HostBrief, intent: RetrievalIntent):
     reference_fields = reference_decision.fields
 
     banned = _unique(list(color_fields.get("negative_add", [])))
-    display_text = _clean_text(brief.host_name or "Creator")
+    display_text, text_policy_reason = _select_display_text(host, brief)
 
     intent_anchor_terms = _unique(
         list(intent.shape_anchors)
@@ -249,6 +250,7 @@ def _extract_slots(brief: HostBrief, intent: RetrievalIntent):
 
     slots = {
         "display_text": display_text,
+        "text_policy_reason": text_policy_reason,
         "primary_symbol": primary_symbol,
         "secondary_symbol": secondary_symbol,
         "silhouette": shape_fields["silhouette"],
@@ -276,6 +278,7 @@ def _extract_slots(brief: HostBrief, intent: RetrievalIntent):
     }
     if brief.vision is not None:
         _apply_vision_overrides(slots, brief.vision)
+    _enforce_display_text_policy(slots, host, brief)
     return slots, color_decision, shape_decision, reference_decision
 
 
@@ -377,6 +380,75 @@ def _format_symbol_forms(forms) -> str:
         return ""
     position = forms.position or "灯头主体"
     return f"将「{forms.symbol}」解构为{position}的{'、'.join(forms.forms)}"
+
+
+def _select_display_text(host: HostInput, brief: HostBrief) -> tuple[str, str]:
+    """Pick the exact text rendered in the lamp head.
+
+    Long streamer names should first try a community-owned text target. If no
+    community text exists, keep the streamer name rather than generating a
+    blank plate; current previews still need a readable first-shot label.
+    """
+
+    host_text = _clean_optional_text(host.host_name or brief.host_name or "")
+    community_text = _clean_optional_text(host.primary_text or host.community_name or brief.community_name or "")
+    limit = _text_switch_limit()
+
+    if host_text and _compact_text_len(host_text) > limit and community_text:
+        return (
+            community_text,
+            f"host name exceeds {limit} compact characters; using community text",
+        )
+    if host_text:
+        return host_text, "using streamer name as exact one-shot text"
+    if community_text:
+        return community_text, "streamer name unavailable; using community text"
+    return "Creator", "no usable text source; using Creator fallback"
+
+
+def _enforce_display_text_policy(slots: dict, host: HostInput, brief: HostBrief) -> None:
+    """Re-apply text policy after vision overrides.
+
+    Cached vision briefs may carry an older exact_text choice. The final rule
+    remains: if the host name is over the compact length limit and community
+    text exists, use community text; otherwise render whichever usable text we
+    have rather than switching to a blank post-overlay core.
+    """
+
+    selected, reason = _select_display_text(host, brief)
+    host_text = _clean_optional_text(host.host_name or brief.host_name or "")
+    community_text = _clean_optional_text(host.primary_text or host.community_name or brief.community_name or "")
+    limit = _text_switch_limit()
+
+    if host_text and _compact_text_len(host_text) > limit and community_text:
+        slots["display_text"] = selected
+        slots["text_policy_reason"] = reason
+        return
+
+    current = _clean_optional_text(slots.get("display_text", ""))
+    if current:
+        slots["display_text"] = current
+        slots.setdefault("text_policy_reason", "using vision-selected exact one-shot text")
+        return
+    slots["display_text"] = selected
+    slots["text_policy_reason"] = reason
+
+
+def _text_switch_limit() -> int:
+    raw = os.getenv("TEXT_COMMUNITY_FALLBACK_LIMIT", "15")
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return 15
+
+
+def _compact_text_len(text: str) -> int:
+    return len(str(text or "").replace(" ", ""))
+
+
+def _clean_optional_text(value: str) -> str:
+    cleaned = _clean_text(value or "")
+    return "" if cleaned == "Creator" and not str(value or "").strip() else cleaned
 
 
 def _build_prompt(slots: dict) -> str:

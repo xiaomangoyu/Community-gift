@@ -96,7 +96,6 @@ workflow = CommunityGiftWorkflow(
     generation_attempts=1,
     generation_concurrency=4,
     evaluate_images=False,
-    use_legacy_llm_design=False,
     vision_client=ModelHubGiftClient(),
 )
 

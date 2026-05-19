@@ -17,6 +17,7 @@ Why multi-image instead of 1:1?
 from __future__ import annotations
 
 import hashlib
+import os
 import random
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -42,6 +43,7 @@ WEIGHTS = {
 STRONG_QUALITY_BONUS = 0.5
 WEAK_TEXT_ONLY_TAGS = {"latin", "short", "long"}
 GENERIC_VIBE_TAGS = {"energetic", "powerful", "dramatic", "idol_support"}
+GENERIC_FALLBACK_REFERENCE_ID = os.getenv("REFERENCE_GENERIC_FALLBACK_ID", "jelly_fruit_juicy")
 
 
 @dataclass
@@ -322,11 +324,16 @@ def _strong_fallback(
     avoid_text_scripts: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     avoid_text_scripts = avoid_text_scripts or set()
+    generic = _find_reference(references, GENERIC_FALLBACK_REFERENCE_ID, exclude=exclude)
     eligible = [
         e
         for e in references
         if e["id"] not in exclude and not _has_avoided_text_script(e, avoid_text_scripts)
     ]
+    if generic and generic in eligible:
+        return [generic]
+    if not eligible and generic:
+        return [generic]
     safe = [
         e
         for e in eligible
@@ -340,6 +347,19 @@ def _strong_fallback(
         return []
     rng = random.Random(seed)
     return rng.sample(strong, k=min(k, len(strong)))
+
+
+def _find_reference(
+    references: list[dict[str, Any]],
+    reference_id: str,
+    exclude: set[str],
+) -> dict[str, Any] | None:
+    if not reference_id:
+        return None
+    for entry in references:
+        if entry.get("id") == reference_id and entry.get("id") not in exclude:
+            return entry
+    return None
 
 
 def _avoid_text_scripts(context: dict[str, Any]) -> set[str]:

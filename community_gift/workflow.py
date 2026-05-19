@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .clients.openai_client import GiftOpenAIClient
 from .clients.image_client import ImageGenerationClient
-from .csv_io import read_hosts, split_list, write_designs_csv, write_designs_json
+from .csv_io import read_hosts, write_designs_csv, write_designs_json
 from .effect_library import EffectLibrary
 from .host_brief import HostBrief, RetrievalIntent, build_host_brief, derive_retrieval_intent
 from .host_brief_eval import BriefEvalResult, evaluate_brief, repair_brief
@@ -19,11 +19,7 @@ from .host_vision import (
     save_vision_cache,
 )
 from .models import GenerationResult, GiftDesign, ImageEvaluation
-from .prompt_planner import (
-    apply_prompt_planning,
-    classify_evaluation_failures,
-    update_plan_for_retry,
-)
+from .prompt_planner import classify_evaluation_failures, update_plan_for_retry
 from .seedance_prompt import build_reference_negative_prompt, build_reference_seedance_prompt
 from .template_first import build_template_first_design
 
@@ -46,7 +42,6 @@ class CommunityGiftWorkflow:
         generation_attempts: int = 1,
         generation_concurrency: int = 100,
         evaluate_images: bool = False,
-        use_legacy_llm_design: bool = False,
         vision_client=None,
     ) -> None:
         self.openai_client = openai_client
@@ -57,7 +52,6 @@ class CommunityGiftWorkflow:
         self.generation_attempts = max(1, generation_attempts)
         self.generation_concurrency = max(1, generation_concurrency)
         self.evaluate_images = evaluate_images
-        self.use_legacy_llm_design = use_legacy_llm_design
         # Vision client: must expose ``analyze_host_visual_brief(host) -> HostVisionBrief``.
         # When None, build_host_brief falls back to heuristic-only mode.
         self.vision_client = vision_client
@@ -91,43 +85,21 @@ class CommunityGiftWorkflow:
             if effect_matches:
                 matched_names = ", ".join(match.effect_name for match in effect_matches)
                 print(f"[{host.row_id}] matched ideal effects: {matched_names}")
-            if self.use_legacy_llm_design:
-                visual = self.openai_client.analyze_image(host)
-                effect_context = (
-                    self.effect_library.generation_context(effect_matches)
-                    if self.effect_library
-                    else []
-                )
-                design = self.openai_client.create_design(host, visual, effect_context=effect_context)
-                design.matched_effects = effect_matches
-                _apply_reviewed_design_hints(host, design)
-                apply_prompt_planning(host, design, effect_matches)
-                if _should_use_reference_lightstick(effect_matches):
-                    form_hint = host.body_form or host.content_type or design.recommended_gift_form
-                    design.recommended_gift_form = (
-                        f"premium full-body personalized lightstick based on {form_hint}"
-                        if form_hint
-                        else "premium full-body personalized lightstick"
-                    )
-                    design.seedance_prompt = build_reference_seedance_prompt(design, host)
-                    design.seedance_negative_prompt = build_reference_negative_prompt(design)
-            else:
-                # Step 2: normalize HostInput → HostBrief, with vision overrides.
-                vision = vision_briefs.get(host.row_id)
-                raw_brief = build_host_brief(host, vision=vision)
-                # Step 3: eval (no-op container today) + repair (pass-through)
-                eval_result = evaluate_brief(raw_brief)
-                repaired_brief = repair_brief(raw_brief, eval_result)
-                eval_results.append(eval_result)
-                # Step 5: derive retrieval intent for reference search.
-                # Default mirrors brief tags; eval/repair will mutate this later.
-                intent = derive_retrieval_intent(repaired_brief)
-                intents.append(intent)
-                # Step 4: feed repaired brief + intent into routers + composite
-                design, brief = build_template_first_design(
-                    host, effect_matches, brief=repaired_brief, intent=intent
-                )
-                briefs.append(brief)
+            # Step 2: normalize HostInput → HostBrief, with vision overrides.
+            vision = vision_briefs.get(host.row_id)
+            raw_brief = build_host_brief(host, vision=vision)
+            # Step 3: eval (no-op container today) + repair (pass-through)
+            eval_result = evaluate_brief(raw_brief)
+            repaired_brief = repair_brief(raw_brief, eval_result)
+            eval_results.append(eval_result)
+            # Step 5: derive retrieval intent for reference search.
+            intent = derive_retrieval_intent(repaired_brief)
+            intents.append(intent)
+            # Step 4: feed repaired brief + intent into routers + composite
+            design, brief = build_template_first_design(
+                host, effect_matches, brief=repaired_brief, intent=intent
+            )
+            briefs.append(brief)
             designs.append(design)
 
         write_designs_csv(designs, self.output_dir / "structured_designs.csv")
@@ -626,29 +598,6 @@ def _should_use_reference_lightstick(effect_matches) -> bool:
         match.effect_id == "strong_heart_lightstick_product_series"
         for match in effect_matches
     )
-
-
-def _apply_reviewed_design_hints(host, design: GiftDesign) -> None:
-    if host.material_language_hint:
-        hints = split_list(host.material_language_hint)
-        design.material_language = _prepend_unique(hints, design.material_language)
-    if host.decoration_intensity:
-        design.complexity_rules = _prepend_unique(
-            [f"reviewed decoration intensity: {host.decoration_intensity}"],
-            design.complexity_rules,
-        )
-
-
-def _prepend_unique(prefix: list[str], values: list[str]) -> list[str]:
-    output: list[str] = []
-    seen: set[str] = set()
-    for item in [*prefix, *values]:
-        key = item.strip().lower()
-        if not key or key in seen:
-            continue
-        output.append(item)
-        seen.add(key)
-    return output
 
 
 def _revise_prompt(prompt: str, evaluations, threshold: float) -> str:

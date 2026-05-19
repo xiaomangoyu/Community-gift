@@ -31,12 +31,6 @@ class HostInput(BaseModel):
     raw: dict[str, Any] = Field(default_factory=dict)
 
 
-class VisualAnalysis(BaseModel):
-    usable_non_face_cues: list[str] = Field(default_factory=list)
-    image_style_notes: list[str] = Field(default_factory=list)
-    avoid_copying: list[str] = Field(default_factory=list)
-
-
 class IdealEffect(BaseModel):
     id: str
     name: str

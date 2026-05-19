@@ -15,8 +15,8 @@ Mapping (signals.md → HostInput):
 - ``avatar.jpg``    → ``host_image``    (absolute path, only if file exists)
 
 Colors / vibe / personality are NOT in signals.md and are intentionally left
-empty in v1 — see chat history. Avatar reference image carries colour/vibe
-context into Seedream directly.
+empty in v1 — see chat history. Avatar still feeds the vision brief, but it is
+not sent to Seedream as an image reference by default.
 """
 
 from __future__ import annotations

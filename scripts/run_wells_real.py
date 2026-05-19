@@ -55,7 +55,6 @@ workflow = CommunityGiftWorkflow(
     generation_attempts=1,
     generation_concurrency=5,
     evaluate_images=False,
-    use_legacy_llm_design=False,
 )
 
 designs = workflow.build_designs(wells_csv)

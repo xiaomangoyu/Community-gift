@@ -15,7 +15,50 @@ from ..host_vision import (
     pick_exact_text,
     pick_vision_image,
 )
-from ..models import GiftDesign, HostInput, ImageEvaluation, VisualAnalysis
+from ..models import GiftDesign, HostInput, ImageEvaluation
+
+
+VISION_BRIEF_WRITING_TEMPLATE = """按下面这个从 Cowhair 强 prompt 抽象出来的模板写当前主播 brief。
+注意:这是写作模板,不是要你输出完整 prompt;你最终仍然只输出 JSON。
+
+1. 开场产品合同:
+黑色背景,固定45度朝右产品视角,完整展示整支打call棒,灯头/连接处/握柄/底部节点全部清晰。顶部为 {lamp_head_silhouette},中央为 {central_core_material} 实体核心,中间嵌入发光文字 {exact_text}。
+
+2. 风格记忆:
+整体风格围绕 "{exact_text}" 延展,设定为 {primary_symbol} × {material_or_texture_memory} × {idol_collectible_mood},整体气质偏 {mood_phrase},带一点 {streamer_visual_memory} 的视觉记忆。
+=> 写入 style_pitch / mood.phrase。
+
+3. 配色记忆:
+整体配色采用 {main_color}、{secondary_color}、{accent_colors},形成 {palette_family} 的鲜明视觉记忆。主色/主材/中心核心各自负责什么视觉任务要说清楚。
+=> 写入 palette.family/main_color/secondary_color/accent_colors/tags。
+
+4. 材质对比:
+材质以 {dominant_material}、{core_material}、{trim_material}、{surface_finish} 为主,强调 {soft_vs_hard_or_clear_vs_matte_contrast},形成收藏级3D产品质感。
+=> 写入 materials.main/supporting/tags,优先使用图像模型容易执行的产品材质词。
+
+5. 主题解构:
+主题为 {primary_symbol}、{secondary_symbol} 与 {mood_symbol} 的解构设计:
+将 {primary_symbol} 解构为灯头主体的 {primary_forms};
+将 {secondary_symbol} 解构为灯头边缘/连接区/握柄上的 {secondary_forms};
+将气质或内容感转译为 {connector_or_surface_details}。
+=> 写入 signature_symbols 和 theme_forms。每个 forms 必须是能长在产品上的结构,不是平面图案。
+
+6. 灯头主读感:
+整体灯头像一个被 {primary_symbol} 与 {secondary_symbol} 包裹的 {idol_object_metaphor},主轮廓要清晰,中心核心要透亮完整,外部装饰不能遮挡文字与核心结构。
+=> 写入 lamp_head_silhouette / silhouette_language / theme_forms.fusion_note。
+
+7. 文字嵌入:
+文字 {exact_text} 采用 {font_style_memory} 的立体发光字体,具有立体厚度、浮雕感、局部内发光、柔亮描边、嵌入式核心结构感。
+=> 写入 text.style_hint。
+
+8. 手柄与底部节点:
+底部装饰设计为一体化 {theme_bottom_node},加入 {bottom_details},让视觉重点集中在灯头,同时保持整支比例完整、结构协调。
+=> 写入 handle.main_material/surface_treatment/connector_detail/bottom_cap/decoration_continuation。
+
+9. 总强调:
+收藏级产品渲染、强3D体积感、真实材质厚度、清晰主光、边缘轮廓光、材质层次、核心局部发光、整支棒体不做全局霓虹泛光、干净商业海报感。
+"""
+
 
 
 class ModelHubGiftClient:
@@ -67,6 +110,8 @@ class ModelHubGiftClient:
             "你是 TikTok 直播社群应援棒礼物的视觉设计 brief 生成器。"
             "根据提供的主播视觉素材(avatar 或 sticker)与 signals 摘要,产出一份"
             "**结构化的 JSON brief**,用于驱动一支高级实体应援棒(lightstick)的设计。"
+            "\n\n最高优先级写作模板:\n"
+            f"{VISION_BRIEF_WRITING_TEMPLATE}"
             "\n\n参考输出风格示例(节奏/词汇/具体程度,但不要照搬词组):\n"
             "  - style_pitch 例:甜酷果冻系守护精灵风 / 温柔梦幻紫色爱心偶像应援风 / 热带海岛夜晚应援风\n"
             "  - palette.family 例:甜冷糖果系 / 烟灰冷调 / 暖橙海岛系 / 紫色梦幻系\n"
@@ -214,76 +259,6 @@ class ModelHubGiftClient:
         brief.image_source = image_source
         brief.image_path = image_path
         return brief
-
-    def analyze_image(self, host: HostInput) -> VisualAnalysis:
-        if not host.host_image:
-            return VisualAnalysis(
-                usable_non_face_cues=[],
-                image_style_notes=[],
-                avoid_copying=["无图片输入，完全依赖 CSV 字段，不生成主播脸"],
-            )
-
-        content = [
-            {
-                "type": "text",
-                "text": (
-                    "请只分析这张主播参考图里的非人脸设计线索，不要描述五官、脸型、真人身份。"
-                    "只输出 JSON，字段：usable_non_face_cues, image_style_notes, avoid_copying。"
-                ),
-            },
-            {"type": "image_url", "image_url": {"url": self._image_to_input_url(host.host_image)}},
-        ]
-        text = self._chat(content, max_tokens=700)
-        return VisualAnalysis.model_validate(_json_object(text))
-
-    def create_design(
-        self,
-        host: HostInput,
-        visual: VisualAnalysis,
-        effect_context: list[dict] | None = None,
-    ) -> GiftDesign:
-        payload = {
-            "host": host.model_dump(exclude={"raw"}),
-            "visual_analysis": visual.model_dump(),
-            "ideal_effect_rules": effect_context or [],
-            "required_output_schema": {
-                "row_id": "int",
-                "host_name": "string",
-                "community_name": "string",
-                "matched_effects": "array, can be empty",
-                "core_keywords": "array of strings",
-                "required_elements": "array of strings",
-                "abstract_methods": "array of strings",
-                "recommended_gift_form": "string",
-                "material_language": "array of strings",
-                "color_plan": "string",
-                "composition": "string",
-                "complexity_rules": "array of strings",
-                "negative_constraints": "array of strings",
-                "seedance_prompt": "English prompt string",
-                "seedance_negative_prompt": "English negative prompt string",
-            },
-            "notes": [
-                "只输出 JSON object，不要 markdown。",
-                "方向必须是高级实体礼物，不是海报。",
-                "prompt 必须明确 no human face, no portrait, no poster。",
-                "ideal_effect_rules 只用于推理，不要复制旧 prompt。",
-            ],
-        }
-        content = [
-            {
-                "type": "text",
-                "text": (
-                    "请把下面主播信息结构化成一个简单、高级实体社群礼物方案，"
-                    "并生成 Seedance 4.5 出图 prompt。只输出 JSON object。\n"
-                    f"{json.dumps(payload, ensure_ascii=False)}"
-                ),
-            }
-        ]
-        text = self._chat(content, max_tokens=2800)
-        data = _json_object(text)
-        data["matched_effects"] = []
-        return GiftDesign.model_validate(data)
 
     def evaluate_candidate_image(
         self,

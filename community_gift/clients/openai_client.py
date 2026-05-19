@@ -7,7 +7,7 @@ from pathlib import Path
 
 from openai import OpenAI
 
-from ..models import GiftDesign, HostInput, ImageEvaluation, VisualAnalysis
+from ..models import GiftDesign, ImageEvaluation
 
 
 SYSTEM_PROMPT = """你是一个 TikTok 直播社群礼物设计工作流助手。
@@ -29,76 +29,6 @@ class GiftOpenAIClient:
             raise ValueError("OPENAI_API_KEY is missing.")
         self.client = OpenAI(api_key=api_key)
         self.model = model
-
-    def analyze_image(self, host: HostInput) -> VisualAnalysis:
-        if not host.host_image:
-            return VisualAnalysis(
-                usable_non_face_cues=[],
-                image_style_notes=[],
-                avoid_copying=["无图片输入，完全依赖 CSV 字段，不生成主播脸"],
-            )
-
-        content: list[dict] = [
-            {
-                "type": "input_text",
-                "text": (
-                    "请只分析这张主播参考图里的非人脸设计线索，"
-                    "不要描述五官、脸型、真人身份。输出 JSON。"
-                ),
-            }
-        ]
-        content.append({"type": "input_image", "image_url": self._image_to_input_url(host.host_image)})
-
-        response = self.client.responses.parse(
-            model=self.model,
-            input=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": content},
-            ],
-            text_format=VisualAnalysis,
-        )
-        if response.output_parsed is None:
-            return VisualAnalysis.model_validate_json(response.output_text)
-        return response.output_parsed
-
-    def create_design(
-        self,
-        host: HostInput,
-        visual: VisualAnalysis,
-        effect_context: list[dict] | None = None,
-    ) -> GiftDesign:
-        payload = {
-            "host": host.model_dump(exclude={"raw"}),
-            "visual_analysis": visual.model_dump(),
-            "ideal_effect_rules": effect_context or [],
-            "required_output_notes": [
-                "recommended_gift_form 必须从高级实体礼物角度选择，不能固定为横幅",
-                "seedance_prompt 用英文，便于图像模型稳定生成",
-                "seedance_negative_prompt 用英文",
-                "prompt 必须明确 no human face, no portrait, no poster",
-                "ideal_effect_rules 是从验证过的好 prompt/好图中提炼出来的规则，只用于推理，不要复制旧 prompt",
-                "如果 host 里有 body_form、primary_text、secondary_text、material_language_hint、decoration_intensity，它们是人工精读后的设计决策，优先级高于泛化推断",
-            ],
-        }
-
-        response = self.client.responses.parse(
-            model=self.model,
-            input=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": (
-                        "请把下面主播信息结构化成一个简单、高级实体社群礼物方案，"
-                        "并生成 Seedance 4.5 出图 prompt。只输出 JSON。\n"
-                        f"{json.dumps(payload, ensure_ascii=False)}"
-                    ),
-                },
-            ],
-            text_format=GiftDesign,
-        )
-        if response.output_parsed is None:
-            return GiftDesign.model_validate_json(response.output_text)
-        return response.output_parsed
 
     def evaluate_candidate_image(
         self,

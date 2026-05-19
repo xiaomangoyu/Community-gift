@@ -55,11 +55,6 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Enable VLM image evaluation/retry. Default is off; pass/fail is decided manually.",
     )
-    parser.add_argument(
-        "--legacy-llm-design",
-        action="store_true",
-        help="Use the old LLM/planner design orchestration path. Default is template-first.",
-    )
     return parser.parse_args()
 
 
@@ -122,7 +117,6 @@ def main() -> None:
         generation_attempts=args.generation_attempts,
         generation_concurrency=generation_concurrency,
         evaluate_images=evaluate_images,
-        use_legacy_llm_design=args.legacy_llm_design,
     )
     designs = workflow.build_designs(Path(args.csv).expanduser(), max_rows=max_rows)
     if args.dry_run:
