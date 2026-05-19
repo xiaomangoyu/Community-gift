@@ -528,7 +528,11 @@ def _write_debug_cards(
         )
         if picks:
             for pick in picks:
-                weak = " (weak text-only match)" if pick.get("weak_text_only_match") else ""
+                weak = ""
+                if pick.get("weak_text_only_match"):
+                    weak = " (weak text-only match)"
+                elif pick.get("weak_generic_match"):
+                    weak = " (weak generic match)"
                 dims = _join(pick.get("matched_dimensions") or [])
                 lines.append(
                     f"- reference_pick: {pick.get('id', '')}{weak}; score={pick.get('score', '')}; dims={dims}"

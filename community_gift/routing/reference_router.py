@@ -40,6 +40,8 @@ WEIGHTS = {
     "text": 1.0,
 }
 STRONG_QUALITY_BONUS = 0.5
+WEAK_TEXT_ONLY_TAGS = {"latin", "short", "long"}
+GENERIC_VIBE_TAGS = {"energetic", "powerful", "dramatic", "idol_support"}
 
 
 @dataclass
@@ -84,11 +86,16 @@ class ReferenceRouter:
         trace: list[RouteTraceEntry] = []
         for entry in self.references:
             score, matched = _score(entry, host_signals)
+            weak_text_only = _is_weak_text_only_match(matched)
+            weak_generic = _is_weak_generic_match(matched)
             trace.append(
                 RouteTraceEntry(
                     rule_id=entry["id"],
-                    matched=score > 0,
-                    reason=_describe_match(score, matched, entry),
+                    matched=score > 0 and not weak_generic,
+                    reason=_describe_match(score, matched, entry, weak_generic),
+                    skipped_because=_weak_reason(matched)
+                    if weak_generic
+                    else "",
                 )
             )
             scored.append((score, matched, entry))
@@ -97,7 +104,7 @@ class ReferenceRouter:
 
         picks: list[ReferencePick] = []
         fallback_used = False
-        positive = [item for item in scored if item[1]]
+        positive = [item for item in scored if item[1] and not _is_weak_generic_match(item[1])]
 
         if positive:
             for score, matched, entry in positive[: self.top_n]:
@@ -111,6 +118,7 @@ class ReferenceRouter:
                     exclude=already,
                     k=self.top_n - len(picks),
                     seed=_seed_for_context(context),
+                    avoid_text_scripts=_avoid_text_scripts(context),
                 )
                 for entry in filler:
                     picks.append(_to_pick(entry, 0.0, {}))
@@ -121,6 +129,7 @@ class ReferenceRouter:
                 exclude=set(),
                 k=self.top_n,
                 seed=_seed_for_context(context),
+                avoid_text_scripts=_avoid_text_scripts(context),
             )
             for entry in filler:
                 picks.append(_to_pick(entry, 0.0, {}))
@@ -137,7 +146,8 @@ class ReferenceRouter:
                         "score": round(p.score, 2),
                         "matched_tags": p.matched_tags,
                         "matched_dimensions": sorted(p.matched_tags),
-                        "weak_text_only_match": sorted(p.matched_tags) == ["text"],
+                        "weak_generic_match": _is_weak_generic_match(p.matched_tags),
+                        "weak_text_only_match": _is_weak_text_only_match(p.matched_tags),
                     }
                     for p in picks
                 ],
@@ -223,13 +233,54 @@ def _score(entry: dict[str, Any], host_signals: dict[str, list[str]]) -> tuple[f
     return semantic_score + quality_bonus, matched
 
 
-def _describe_match(score: float, matched: dict[str, list[str]], entry: dict[str, Any]) -> str:
+def _is_weak_text_only_match(matched: dict[str, list[str]]) -> bool:
+    """True when a reference only matched generic Latin length tags.
+
+    Latin/short/long are useful as secondary tie-breakers, but too weak to
+    select a visually strong reference by themselves. Script-specific text
+    matches such as Korean or Arabic remain valid because they carry real
+    typography constraints.
+    """
+
+    if sorted(matched) != ["text"]:
+        return False
+    return set(matched.get("text") or []).issubset(WEAK_TEXT_ONLY_TAGS)
+
+
+def _is_weak_generic_match(matched: dict[str, list[str]]) -> bool:
+    if _is_weak_text_only_match(matched):
+        return True
+    if not matched:
+        return False
+    dims = set(matched)
+    if not dims.issubset({"text", "vibe"}):
+        return False
+    vibe_tags = set(matched.get("vibe") or [])
+    text_tags = set(matched.get("text") or [])
+    return bool(vibe_tags) and vibe_tags.issubset(GENERIC_VIBE_TAGS) and text_tags.issubset(
+        WEAK_TEXT_ONLY_TAGS
+    )
+
+
+def _weak_reason(matched: dict[str, list[str]]) -> str:
+    if _is_weak_text_only_match(matched):
+        return "weak latin/length-only text match"
+    return "weak generic vibe + latin/length match"
+
+
+def _describe_match(
+    score: float,
+    matched: dict[str, list[str]],
+    entry: dict[str, Any],
+    weak_generic: bool = False,
+) -> str:
     if not matched:
         quality = str(entry.get("quality", "")).lower()
         suffix = "; strong quality bonus held for ranking only after a real tag match" if quality == "strong" else ""
         return f"score={score:.1f} (no positive tag matches{suffix})"
     parts = [f"{dim}:{','.join(tags)}" for dim, tags in matched.items()]
-    return f"score={score:.1f} | " + " | ".join(parts)
+    suffix = f" | ignored as {_weak_reason(matched)}" if weak_generic else ""
+    return f"score={score:.1f} | " + " | ".join(parts) + suffix
 
 
 def _to_pick(entry: dict[str, Any], score: float, matched: dict[str, list[str]]) -> ReferencePick:
@@ -247,14 +298,42 @@ def _strong_fallback(
     exclude: set[str],
     k: int,
     seed: int,
+    avoid_text_scripts: set[str] | None = None,
 ) -> list[dict[str, Any]]:
-    strong = [e for e in references if str(e.get("quality", "")).lower() == "strong" and e["id"] not in exclude]
+    avoid_text_scripts = avoid_text_scripts or set()
+    eligible = [
+        e
+        for e in references
+        if e["id"] not in exclude and not _has_avoided_text_script(e, avoid_text_scripts)
+    ]
+    safe = [
+        e
+        for e in eligible
+        if str(e.get("fallback_safe", "")).lower() in {"1", "true", "yes", "safe"}
+    ]
+    pool = safe or eligible
+    strong = [e for e in pool if str(e.get("quality", "")).lower() == "strong"]
     if not strong:
-        strong = [e for e in references if e["id"] not in exclude]
+        strong = pool
     if not strong:
         return []
     rng = random.Random(seed)
     return rng.sample(strong, k=min(k, len(strong)))
+
+
+def _avoid_text_scripts(context: dict[str, Any]) -> set[str]:
+    intent = context.get("intent") or {}
+    return {str(tag).lower().strip() for tag in intent.get("avoid_text_scripts") or []}
+
+
+def _has_avoided_text_script(entry: dict[str, Any], avoid_text_scripts: set[str]) -> bool:
+    if not avoid_text_scripts:
+        return False
+    text_tags = {
+        str(tag).lower().strip()
+        for tag in (entry.get("tags") or {}).get("text", [])
+    }
+    return bool(text_tags & avoid_text_scripts)
 
 
 def _seed_for_context(context: dict[str, Any]) -> int:

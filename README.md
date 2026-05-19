@@ -103,6 +103,40 @@ python -m community_gift.cli --csv examples/sample.csv --dry-run --mock
 python -m community_gift.cli --csv examples/sample.csv
 ```
 
+### Streamers Debug Preview
+
+调试 `streamers/` 数据时，推荐用 debug preview 脚本。它会保留完整中间产物，并额外生成两张 contact sheet：
+
+- `contact_sheet.jpg`：纯图预览。
+- `contact_sheet_debug.jpg`：图片 + reference 命中、score、fallback、matched tags。
+
+常用命令：
+
+```bash
+python3 scripts/run_streamers_debug_preview.py --start 0 --count 15
+python3 scripts/run_streamers_debug_preview.py --start 15 --count 15
+```
+
+输出目录默认形如：
+
+```text
+outputs/preview_debug_<timestamp>_s<start>_n<count>/
+  contact_sheet.jpg
+  contact_sheet_debug.jpg
+  route_summary.json
+  routing_trace.json
+  payloads/
+  host_briefs/
+  host_visions/
+  debug_cards/
+```
+
+只验证路由和中间 JSON、不调用生图接口：
+
+```bash
+python3 scripts/run_streamers_debug_preview.py --start 0 --count 5 --dry-run
+```
+
 默认图片 provider 是 Seedream 4.5 HTTP：
 
 ```env
