@@ -205,3 +205,205 @@ references:
       lightning-bolt silhouette extensions,
       purple-gold royal fantasy mood,
       scepter-like vertical proportion with dragon-head bottom detail.
+
+  - id: butterfly_luna_dream
+    image: Butterfly2.png
+    prompt: Butterfly2.txt
+    quality: strong
+    notes: "紫白蝴蝶翼 + LUNA 文字;通用梦幻翼类 reference"
+    tags:
+      shape: [butterfly, wing, symmetric, gem, flowing_decoration]
+      color: [purple, lavender, white, pearl, pink, silver]
+      material: [translucent_resin, pearlescent_lacquer, crystal_core, faceted_crystal]
+      vibe: [dreamy, soft, romantic, elegant, idol_support]
+      text: [latin, short, embedded_in_core, 3d_glow, script_logo]
+    role_description: >-
+      A premium idol lightstick on pure black in a full-product 45-degree
+      right-facing view. The whole lightstick is rotated as one object so the
+      front of the lamp head, right-side thickness, and handle side are all
+      visible. The lamp head is a solid butterfly-wing structure with
+      translucent lavender wings, raised wing-vein relief, and a jewel-like
+      central core. Short Latin text is embedded in the center with elegant
+      moonlit logo typography. Palette is lavender purple / pearl white /
+      pale pink / silver. This image contributes:
+      symmetric butterfly-wing silhouette,
+      dreamy wing material and raised vein structure,
+      soft purple-white idol mood,
+      short Latin text embedded in a gem-like core.
+
+  - id: cloud_hood_iceblue
+    image: Cloud.png
+    prompt: Cloud.txt
+    quality: strong
+    fallback_safe: true
+    notes: "云朵兜帽 + 冰蓝文字;适合云/兜帽/温柔清冷方向"
+    tags:
+      shape: [cloud, hood, rounded_dome, flowing_decoration]
+      color: [blue, white, pearl, cream, lavender]
+      material: [pearlescent_resin, crystal_core, cream_enamel]
+      vibe: [dreamy, soft, gentle, cute, idol_support]
+      text: [latin, short, embedded_in_core, 3d_glow, rounded_logo]
+    role_description: >-
+      A premium idol lightstick on pure black in a full-product 45-degree
+      right-facing view. The whole lightstick is rotated as one object so the
+      front of the lamp head, right-side thickness, and handle side are all
+      visible. The lamp head combines a hood-like arch and rounded cloud
+      bubbles into one soft solid silhouette, with an icy blue central text
+      window. Short Latin text is embedded in the cloud core with rounded
+      3D lettering. Palette is ice blue / cream white / mist gray /
+      lavender. This image contributes:
+      cloud-volume silhouette around the lamp head,
+      hood-like protective arch,
+      gentle icy-blue dream mood,
+      soft rounded typography inside a central core.
+
+  - id: jelly_fruit_juicy
+    image: Jelly fruit.png
+    prompt: Jelly fruit.txt
+    quality: strong
+    fallback_safe: true
+    notes: "果冻水果切片 + 叶片结构 + JUICY 文字;补水果/甜系通用 reference"
+    tags:
+      shape: [fruit_cluster, fruit_slice, leaf, mascot, rounded_dome]
+      color: [red, cherry_red, green, mint_green, cream, white, pink]
+      material: [jelly_resin, translucent_resin, cream_enamel, pearlescent_trim]
+      vibe: [cute, sweet, playful, soft, designer_toy, idol_support]
+      text: [latin, short, embedded_in_core, 3d_glow, candy_emboss]
+    role_description: >-
+      A premium idol lightstick on pure black in a full-product 45-degree
+      right-facing view. The whole lightstick is rotated as one object so the
+      front of the lamp head, right-side thickness, and handle side are all
+      visible. The lamp head is built from rounded jelly fruit slices, leaf
+      guards, and a transparent juicy central core. Short Latin text is
+      embedded in the fruit core with candy packaging typography. Palette is
+      cherry red / melon green / mint / cream white. This image contributes:
+      fruit-slice lamp-head silhouette,
+      jelly and candy resin material world,
+      leaf and fruit-drop bottom details,
+      cute sweet short Latin text treatment.
+
+  - id: cat_ear_meow
+    image: Meow.png
+    prompt: Meow.txt
+    quality: strong
+    fallback_safe: true
+    notes: "猫耳 + 酒红粉 + MEOW;适合猫系/甜酷/宠物感"
+    tags:
+      shape: [cat_ear, ear, rounded_dome, bell, paw]
+      color: [pink, rose, hot_pink, red, pearl, white]
+      material: [jelly_resin, pearlescent_resin, cream_enamel, crystal_core]
+      vibe: [cute, sweet_cool, romantic, idol_support]
+      text: [latin, short, embedded_in_core, 3d_glow, handwriting]
+    role_description: >-
+      A premium idol lightstick on pure black in a full-product 45-degree
+      right-facing view. The whole lightstick is rotated as one object so the
+      front of the lamp head, right-side thickness, and handle side are all
+      visible. The lamp head uses cat ears as the main silhouette, with soft
+      cheek curves, tiny whisker accents, paw/bell bottom details, and a
+      wine-pink central core. Short Latin text is embedded with playful
+      handwritten 3D typography. Palette is rose pink / wine red /
+      cream white / deep purple. This image contributes:
+      cat-ear lamp-head outline,
+      cute pet identity without a literal animal head,
+      pink sweet-cool mood,
+      rounded handwritten Latin text in a solid core.
+
+  - id: dj_headset_beat
+    image: Music.png
+    prompt: Music.txt
+    quality: strong
+    notes: "DJ 耳机 + 绿紫夜店灯环;适合 DJ/电子音乐/节奏感"
+    tags:
+      shape: [headset, headphones, music, ring, circular_core]
+      color: [green, neon_green, purple, black, silver, electric_blue]
+      material: [neon_tube, glossy_resin, hard_plastic, metallic_trim, crystal_core]
+      vibe: [energetic, futuristic, esports, powerful, idol_support, street]
+      text: [latin, short, embedded_in_core, 3d_glow, esports_logo]
+    role_description: >-
+      A premium idol lightstick on pure black in a full-product 45-degree
+      right-facing view. The whole lightstick is rotated as one object so the
+      front of the lamp head, right-side thickness, and handle side are all
+      visible. The lamp head is a DJ headset wrapped around a central glowing
+      beat ring, with rounded earcups, a curved headband, and compact audio
+      controls on the bottom node. Short Latin text is embedded in the center
+      with electronic festival-logo typography. Palette is emerald green /
+      deep purple / black / silver. This image contributes:
+      headphone/headset silhouette built into the lamp head,
+      electronic music and nightclub reference language,
+      circular neon core,
+      compact audio-control bottom node.
+
+  - id: black_gold_beast_noir
+    image: Raptor.png
+    prompt: Raptor.txt
+    quality: strong
+    notes: "黑金猛兽 + NOIR;文件名虽为 Raptor, 实际为黑金猛兽 reference"
+    tags:
+      shape: [beast, panther, lion, wolf, animal, claw, horn, crest]
+      color: [black, gold, champagne, brown, amber]
+      material: [glossy_resin, metallic_trim, pearlescent_lacquer, crystal_core, faceted_crystal]
+      vibe: [powerful, royal, battle, glam, dramatic, elegant, idol_support]
+      text: [latin, short, embedded_in_core, 3d_glow, luxury_logo]
+    role_description: >-
+      A premium idol lightstick on pure black in a full-product 45-degree
+      right-facing view. The whole lightstick is rotated as one object so the
+      front of the lamp head, right-side thickness, and handle side are all
+      visible. The lamp head reads as a black-and-gold beast emblem, using
+      ear/horn points, cheek curves, claw-like gold cuts, and a dark jewel
+      core instead of a literal animal head. Short Latin text is embedded in
+      the center with luxury brand typography. Palette is obsidian black /
+      antique gold / amber / dark brown. This image contributes:
+      luxury black-gold animal identity,
+      beast emblem silhouette without literal animal body,
+      claw and horn-like structural accents,
+      premium short Latin text treatment.
+
+  - id: record_wave_loop
+    image: Record.png
+    prompt: Record.txt
+    quality: strong
+    notes: "黑胶唱片 + 环形声波 + LOOP;适合音乐/唱片/社群节奏感"
+    tags:
+      shape: [record, music, ring, circular_core, wave]
+      color: [black, pink, blue, purple, silver, multi]
+      material: [glossy_resin, neon_tube, transparent_acrylic, metallic_trim]
+      vibe: [energetic, playful, futuristic, idol_support, street]
+      text: [latin, short, embedded_in_core, 3d_glow, music_logo]
+    role_description: >-
+      A premium idol lightstick on pure black in a full-product 45-degree
+      right-facing view. The whole lightstick is rotated as one object so the
+      front of the lamp head, right-side thickness, and handle side are all
+      visible. The lamp head is a circular vinyl-record structure wrapped by
+      colored waveform rings, with a central label-like text core and small
+      audio hardware details near the connector. Short Latin text is embedded
+      in the center with music-label typography. Palette is black vinyl /
+      neon pink / electronic blue / purple / silver. This image contributes:
+      circular record lamp-head structure,
+      waveform ring silhouette,
+      music community identity,
+      short Latin text inside a center-label core.
+
+  - id: retro_microphone_voice
+    image: Voice.png
+    prompt: Voice.txt
+    quality: strong
+    notes: "复古麦克风 + 紫红声波 + VOICE;适合歌手/rapper/主持"
+    tags:
+      shape: [microphone, music, wave, sound, vertical_core]
+      color: [purple, pink, magenta, silver, black, red]
+      material: [metallic_trim, glossy_resin, neon_tube, hard_plastic]
+      vibe: [energetic, elegant, dramatic, idol_support, street]
+      text: [latin, short, embedded_in_core, 3d_glow, music_logo]
+    role_description: >-
+      A premium idol lightstick on pure black in a full-product 45-degree
+      right-facing view. The whole lightstick is rotated as one object so the
+      front of the lamp head, right-side thickness, and handle side are all
+      visible. The lamp head is a retro microphone form with raised grille
+      ribs, pink-purple waveform arcs, and a deep stage-colored center core.
+      Short Latin text is embedded inside the microphone core with bold music
+      cover typography. Palette is deep purple / magenta / dark silver /
+      black. This image contributes:
+      microphone grille as lamp-head structure,
+      sound-wave side extensions,
+      mature music-stage mood,
+      audio-themed handle and bottom-node details.

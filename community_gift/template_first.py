@@ -234,23 +234,7 @@ def _extract_slots(brief: HostBrief, intent: RetrievalIntent):
     shape_fields = shape_decision.fields
     reference_fields = reference_decision.fields
 
-    banned = _unique(
-        [
-            "human face",
-            "portrait",
-            "white product card",
-            "split-screen layout",
-            "detail inset panels",
-            "macro close-up",
-            "pure black product body",
-            "black handle",
-            "flat sticker",
-            "poster",
-            "badge-only composition",
-            "extra slogans or unrelated text",
-            *color_fields.get("negative_add", []),
-        ]
-    )
+    banned = _unique(list(color_fields.get("negative_add", [])))
     display_text = _clean_text(brief.host_name or "Creator")
 
     intent_anchor_terms = _unique(
@@ -380,7 +364,7 @@ def _format_handle(handle) -> str:
     if handle.bottom_cap:
         parts.append(f"底盖设计为{handle.bottom_cap}")
     if handle.decoration_continuation:
-        parts.append(f"主题延续上,{handle.decoration_continuation}")
+        parts.append(f"主题延续上，{handle.decoration_continuation}")
     if len(parts) < 2:
         return ""
     return "。".join(parts) + "。"
@@ -396,17 +380,16 @@ def _format_symbol_forms(forms) -> str:
 
 
 def _build_prompt(slots: dict) -> str:
-    """Reference-driven skeleton.
+    """Reference-style final prompt.
 
-    The 10-section structure mirrors the validated reference prompts in
-    references/imgs/*.txt (45° hero shot, solid one-piece heart, embedded
-    glowing text, "clean commercial poster-grade render"). Routing fills
-    slots; manifest fragments fill the rest.
+    Keep the same section order as the strongest hand-written references,
+    but avoid over-constraining language. Repeated "hard constraint" phrasing
+    tends to make the render stiff, so safety rules now live mostly in the
+    negative prompt.
     """
 
     colors = "、".join(slots["colors"])
     materials = "、".join(_soften_material_terms(slots["materials"]))
-    anchor_line = _format_anchor_line(_soften_anchor_terms(slots.get("intent_anchor_terms") or []))
     lighting_phrase = "柔和棚拍主光、克制边缘描光、低反射材质对比、中央文字小范围内发光"
     fusion_note = slots.get("fusion_note") or ""
     fusion_clause = f"{fusion_note}。" if fusion_note else ""
@@ -420,190 +403,133 @@ def _build_prompt(slots: dict) -> str:
         or f"以「{slots['primary_symbol']}」为核心的一体化立体灯头"
     )
     handle_phrase = slots.get("handle_phrase") or (
-        f"握柄主体延续主题材质,与灯头形成同语义的视觉一体化,避免出现纯白通用塑料管造型。"
+        "握柄主体延续主题材质，与灯头形成同语义的视觉一体化。"
     )
     handle_phrase = _soften_handle_phrase(handle_phrase)
     bottom_node = _soften_handle_phrase(slots["bottom_node"])
+    script_guidance = _text_script_guidance(slots["display_text"])
 
-    return f"""**构图与朝向(硬约束)**：纯黑棚拍背景，1:1 正方形画面。整支应援棒呈固定 45° 倾斜，**灯头在画面右上方、握柄从右上向左下延伸**(整支产品沿画面对角线方向)，灯头中心位于画面右上 40% 区域，底盖位于画面左下 35% 区域。**整支应援棒高度占画面 70-80%，顶端与底端各保留约 10% 黑色边距，左右各保留约 12-15% 黑色边距**。灯头、连接件、完整握柄、底部节点都必须完整可见，不允许任何部分触碰或超出画面边缘。
+    prompt = f"""黑色背景，1:1 正方形画面，固定 45 度朝右产品视角，完整展示整支打call棒，从灯头、连接处、握柄到底部节点全部清晰可见，主体居中，高精度3D收藏级应援棒。灯头是视觉重心，握柄短而完整，整体是一体连续的圆润产品造型。顶部为{lamp_head_silhouette}，中央为完整饱满的实体核心，中间嵌入发光文字「{slots['display_text']}」。
 
-**比例硬约束**：灯头是绝对视觉重心，灯头高度占整支应援棒高度的 **55-65%**；握柄(含连接件 + 底盖)占 **35-45%**，握柄长度始终短于灯头高度，**绝对不允许握柄长于灯头**。握柄整体是短粗的偶像周边握把(可一手握持)，不是长细的法杖/魔杖/剑柄/旗杆。整体读感为"圆润饱满的收藏级周边",**不是武器、不是兵器、不是细长冲击感的造型**。
+整体风格围绕「{slots['primary_symbol']}」延展，设定为{slots['theme_title']}，整体气质偏{slots['mood']}。
 
-**一体成型 / 流线型硬约束**：整支应援棒是**一体连续的流线型有机造型**，灯头→连接处→握柄→底盖之间由**柔和的曲面收束**自然过渡，**禁止分段拼装感**。**严禁**:战术电筒筒身、橡胶按钮、缠绕凹槽、螺纹滚花、可见接缝、粗壮金属箍环、机械拼接件、工业组件感。允许的过渡是细腻的一圈装饰边或柔和的颈部收束(像吹制玻璃的腰身)，而不是切割明显的金属环。优先**圆润/有机/吹塑/连续曲面**的几何语言，而不是棱角分明的多边形拼接。**灯头轮廓为{lamp_head_silhouette}**，整体为完整饱满的实体结构，无外框、无镂空、无中空轮廓，中央嵌入发光文字「{slots['display_text']}」。
+整体配色采用{colors}（主色锚点「{slots['color_anchor']}」，来自{slots['palette_name']}）。背景保持纯黑棚拍质感；如果主题需要深色，用烟灰、枪灰、珠光灰或深色透明树脂表达，让产品边缘和材质层次仍然清楚。
 
-整体风格围绕「{slots['primary_symbol']}」延展，设定为{slots['theme_title']}，整体气质偏{slots['mood']}。{anchor_line}
+材质以{materials}为主，整体强调圆润实体厚度、材质对比、精致倒角、收藏级产品质感。亮面硬质饰件只作为薄边、微小徽章或少量连接点出现；皮革、织物或护具感元素转译为连续哑光包覆、浅压纹和干净表面。打光以{lighting_phrase}为主，重点表现真实厚度、清晰倒角、柔和受控高光。
 
-整体配色采用 {colors}（主色锚点「{slots['color_anchor']}」，来自 {slots['palette_name']}）。背景为纯黑棚拍质感，产品本体、手柄、外壳和大面积装饰不能是纯黑；如主题需要黑色，只用烟灰、枪灰、银灰、珠光灰或深色透明树脂表达，保留清楚的灰色、银色或彩色边缘高光，方便从黑底抠图。
+主题为「{slots['primary_symbol']}」的解构设计：{slots['symbol_translation']}{secondary_clause}。{fusion_clause}所有外扩装饰、包边、护片或框架都与灯头主体一体成型，中央核心保持完整饱满，不做空心镂空，也不做贴纸式平面图案。
 
-灯头材质以 {materials} 为主，整体强调圆润实体厚度、材质对比、精致倒角、收藏级产品质感。亮面硬质饰件仅限极细薄边、微小徽章或少量连接点；皮革/织物转译为连续哑光包覆、浅压纹和干净表面。打光强调{lighting_phrase}，重点表现真实材质厚度、清晰倒角、柔和受控高光，避免过曝核心、廉价塑料玩具感和大面积镜面反射。
+让整体灯头像一个被「{slots['primary_symbol']}」包裹塑造的收藏级应援圣物，既有偶像应援感，也有独特的个人辨识度。整体轮廓语言强调{slots['silhouette_language']}，从正面和侧面都能读出清楚的立体结构。
 
-主题解构：{slots['symbol_translation']}{secondary_clause}。{fusion_clause}灯头本体为完整封闭的一体化实体，不使用外框骨架，不使用心形外框结构，不使用中空轮廓，不出现悬空骨架感。
+文字「{slots['display_text']}」自然嵌入灯头中央实体核心。{slots['text_style']}。{script_guidance}画面中只出现这一处主文字，文字与核心结构融合，不做外接文字牌。
 
-让整个灯头像一个被「{slots['primary_symbol']}」包裹塑造的收藏级实体圣物，既有偶像应援感，也有独特的个人辨识度。整体轮廓语言强调{slots['silhouette_language']}，而不是平面logo、贴纸、徽章、展示牌、魔法杖或手电筒。
-
-文字「{slots['display_text']}」自然嵌入灯头中央实体核心。{slots['text_style']}。只允许出现这一个主文字，不要出现伪字母、错字、额外口号、副标题、手柄文字、外接文字牌、顶部文字牌或悬浮标题。
-
-手柄设计：{handle_phrase}手柄保持**短粗握把比例(高度约为灯头高度的 60-75%，宽度饱满)**，不能是通用细长白色塑料管造型，也不能是细长法杖造型。底部装饰为{bottom_node}，与手柄整体协调。
+手柄设计：{handle_phrase}手柄保持短而饱满的握把比例，与灯头自然连接，不做细长法杖感。底部装饰为{bottom_node}，与手柄整体协调。
 
 整体气质：{slots['mood']}，带有偶像周边收藏感。
 
-整体强调：收藏级实体产品渲染、真实产品厚度、克制明暗层次、文字与中央核心小范围局部发光、整支棒体不做全局霓虹泛光、不做过曝发光核心、干净棚拍产品感。整支打call棒必须完整入画，灯头、连接件、完整手柄和底部节点都要可见，产品像悬浮在纯黑摄影棚中，不接触任何地面或台面。"""
+整体强调：收藏级实体产品渲染、强3D体积感、真实材质厚度、克制明暗层次、文字与中央核心局部发光、整支棒体不做全局霓虹泛光、干净棚拍产品感。整支打call棒完整入画，灯头、连接件、完整手柄和底部节点都清晰可见，产品像悬浮在纯黑摄影棚中。"""
+    return _polish_prompt_text(prompt)
 
 
 def _build_negative_prompt(slots: dict) -> str:
-    """Reference-aligned negatives.
-
-    Key shift from the previous skeleton:
-      - We no longer list `poster` (the new template requests
-        '干净商业海报感' meaning poster-grade render quality). Instead we
-        ban specific bad layouts: `marketing poster layout`,
-        `multi-product collage`.
-      - We no longer ban `empty center` / `hollow center` — the new
-        template explicitly asks for a solid one-piece heart core.
-    """
-
+    """Compact negatives focused on the recurring failure modes."""
     base = [
-        "human face",
-        "portrait",
+        # 人像/真人
         "person",
+        "human face",
+        # 白底/灰底/卡片背景
         "white background",
         "gray background",
-        "white floor",
-        "white tabletop",
-        "white product card",
-        "white rounded rectangle panel",
-        "white card behind product",
-        "rounded black panel on white background",
-        "rectangular background panel",
-        "display board",
-        "presentation board",
-        "split-screen layout",
-        "multi-product collage",
-        "detail inset panels",
-        "product catalog page",
-        "infographic",
-        "instruction diagram",
-        "callout labels",
-        "annotation arrows",
-        "leader lines",
-        "dimension lines",
-        "Chinese explanatory text",
-        "side notes",
-        "captions",
-        "marketing poster layout",
-        "billboard advertisement",
-        "flat sticker",
-        "badge only",
-        "logo only",
-        "heart-shaped outer frame",
-        "open heart frame",
-        "hollow heart outline",
-        "outer skeleton frame",
-        "wireframe heart",
+        "product card",
+        # 裁切/只拍灯头/缺手柄
         "close-up",
-        "macro shot",
-        "zoomed-in head",
-        "head-only close-up",
-        # Framing / cropping negatives — strengthened to catch 08/02-style cuts.
-        "extreme diagonal crop",
         "cropped handle",
         "cropped lamp head",
-        "cropped bottom cap",
         "missing handle",
         "missing bottom cap",
-        "subject touches frame edge",
-        "subject extends past frame",
-        "tight crop with no margin",
-        "off-center composition",
-        # Orientation negatives — lock 45 degree right-up.
-        "wrong orientation",
-        "front-facing product",
-        "head-on view",
-        "horizontal product layout",
-        "lamp head pointing left",
-        "lamp head pointing down",
-        "handle on the right side",
-        "vertical product layout",
-        "pure black product body",
-        "black handle",
-        "fake letters",
-        "misspelled streamer name",
-        "wrong name",
-        "extra unrelated text",
-        "handle text",
-        "text above the lamp head",
-        "external nameplate",
-        "top nameplate",
-        "floating text banner",
-        "extra slogans",
-        "detached props",
-        "too many symbols",
-        "weapon-like",
-        "sword-like silhouette",
-        "staff-like silhouette",
-        "wand proportions",
-        "scepter proportions",
-        "flagpole proportions",
+        # 长杆/法杖/武器/手电筒
+        "weapon",
+        "staff",
+        "wand",
+        "scepter",
         "long thin shaft",
-        "handle longer than lamp head",
-        "handle taller than lamp head",
-        "elongated shaft handle",
-        "spear proportions",
-        "aggressive weapon shape",
-        "pointed weapon tip",
-        # Anti-segmented / anti-tool look — push toward one-piece streamlined.
-        "tactical flashlight body",
-        "police flashlight",
-        "industrial torch",
-        "knurled grip",
-        "ribbed cylindrical handle",
-        "rubber grip ring",
-        "tactical grip texture",
-        "screw thread",
-        "twist-cap",
-        "visible mechanical seam",
-        "thick metal collar ring",
-        "metal sleeve joint",
-        "segmented cylindrical body",
-        "discrete cylinder sections",
-        "assembled tool look",
-        "button on handle",
-        "switch button on body",
-        "machined component",
-        "industrial component assembly",
-        "sharp polygonal facets",
-        "angular faceted body",
-        "overexposed glow",
+        "flashlight",
+        # 多余文字/错字/外部文字牌
+        "fake letters",
+        "misspelled name",
+        "wrong name",
+        "extra text",
+        "external nameplate",
+        # 过曝/强反光/廉价塑料/大面积金属
+        "overexposed",
         "excessive bloom",
-        "excessive specular highlights",
         "mirror-like reflections",
         "cheap glossy plastic",
-        "AI-looking glossy render",
-        "over-polished toy render",
-        "excessive metal trim",
-        "large chrome surfaces",
-        "heavy metal armor",
-        "too many metal rings",
-        "dense stitching",
-        "visible sewing seams",
-        "thick leather straps",
-        "tactical strap details",
-        "sports guard clutter",
+        "heavy chrome metal",
     ]
-    avoid_scripts = slots.get("intent_avoid_text_scripts") or []
+    avoid_scripts = set(slots.get("intent_avoid_text_scripts") or [])
+    if not avoid_scripts:
+        avoid_scripts = _infer_avoid_scripts_from_text(slots.get("display_text", ""))
     script_negatives = _negatives_from_avoid_scripts(avoid_scripts)
     return ", ".join(_unique(base + slots["banned"] + script_negatives))
 
 
 _SCRIPT_NEGATIVE_TERMS: dict[str, list[str]] = {
-    "korean": ["Korean glyphs", "Hangul characters", "Korean text"],
-    "arabic": ["Arabic glyphs", "Arabic script", "right-to-left text"],
-    "chinese": ["Chinese characters", "CJK glyphs", "kanji"],
-    "japanese": ["Japanese glyphs", "kana", "katakana"],
-    "cyrillic": ["Cyrillic characters", "Russian text"],
+    "latin": ["Latin text"],
+    "korean": ["Korean text"],
+    "arabic": ["Arabic text"],
+    "chinese": ["Chinese text"],
+    "japanese": ["Japanese text"],
+    "cyrillic": ["Cyrillic text"],
     "thai": ["Thai script"],
-    "devanagari": ["Devanagari script", "Hindi text"],
+    "devanagari": ["Hindi text"],
 }
+
+
+def _infer_avoid_scripts_from_text(text: str) -> set[str]:
+    """Fallback script guard for mixed/non-Latin names."""
+
+    all_scripts = set(_SCRIPT_NEGATIVE_TERMS)
+    allowed = _detect_text_scripts(text)
+    return all_scripts - allowed if allowed else set()
+
+
+def _detect_text_scripts(text: str) -> set[str]:
+    scripts: set[str] = set()
+    for char in text or "":
+        code = ord(char)
+        if "A" <= char <= "Z" or "a" <= char <= "z":
+            scripts.add("latin")
+        elif 0xAC00 <= code <= 0xD7AF or 0x1100 <= code <= 0x11FF:
+            scripts.add("korean")
+        elif 0x0600 <= code <= 0x06FF or 0x0750 <= code <= 0x077F:
+            scripts.add("arabic")
+        elif 0x3040 <= code <= 0x30FF:
+            scripts.add("japanese")
+        elif 0x4E00 <= code <= 0x9FFF:
+            scripts.update({"chinese", "japanese"})
+        elif 0x0400 <= code <= 0x04FF:
+            scripts.add("cyrillic")
+        elif 0x0E00 <= code <= 0x0E7F:
+            scripts.add("thai")
+        elif 0x0900 <= code <= 0x097F:
+            scripts.add("devanagari")
+    return scripts
+
+
+def _text_script_guidance(text: str) -> str:
+    scripts = _detect_text_scripts(text)
+    if "japanese" in scripts and "latin" not in scripts:
+        return "文字必须保持日文假名/日文字符结构，不要转写成英文字母或其他文字。"
+    if "korean" in scripts and "latin" not in scripts:
+        return "文字必须保持韩文字形结构，不要转写成英文字母或其他文字。"
+    if "arabic" in scripts and "latin" not in scripts:
+        return "文字必须保持阿拉伯字形结构和书写方向，不要转写成英文字母或其他文字。"
+    if "thai" in scripts and "latin" not in scripts:
+        return "文字必须保持泰文字形结构，不要转写成英文字母或其他文字。"
+    if "chinese" in scripts and "latin" not in scripts:
+        return "文字必须保持中文汉字结构，不要转写成英文字母或其他文字。"
+    return ""
 
 
 def _negatives_from_avoid_scripts(scripts: list[str]) -> list[str]:
@@ -621,6 +547,21 @@ def _format_anchor_line(terms: list[str]) -> str:
     if not terms:
         return ""
     return f" 设计语言锚点参考:{', '.join(terms)}（用于内部一致性约束,不作为字面文字呈现）。"
+
+
+def _polish_prompt_text(text: str) -> str:
+    """Clean punctuation introduced by slot-level generated prose."""
+
+    replacements = {
+        "。，": "，",
+        "。。": "。",
+        "；。": "。",
+        "，。": "。",
+        "主题延续上,": "主题延续上，",
+    }
+    for src, dst in replacements.items():
+        text = text.replace(src, dst)
+    return text.strip()
 
 
 def _soften_anchor_terms(terms: list[str]) -> list[str]:
