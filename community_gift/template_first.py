@@ -186,7 +186,10 @@ _HOST_AVATAR_ROLE = (
     "host avatar (NOT a lightstick reference) — extract dominant colors, "
     "lighting mood, vibe, and any signature visual element (mascot, prop, "
     "fashion item, hair colour). Do NOT copy the person's face or render "
-    "any human figure. Use as colour/mood anchor only."
+    "any human figure. Use as colour/mood anchor only. Ignore the avatar "
+    "background, white canvas, circular avatar crop, border, edge colour, "
+    "profile-frame layout, and any UI-like framing; never use them as "
+    "composition or background references."
 )
 
 
