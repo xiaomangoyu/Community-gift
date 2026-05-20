@@ -87,6 +87,7 @@ def main() -> None:
         from .clients.mock_client import MockGiftClient
 
         openai_client = MockGiftClient()
+        vision_client = None
     else:
         if settings.openai_api_key:
             openai_client = GiftOpenAIClient(
@@ -97,6 +98,7 @@ def main() -> None:
             from .clients.modelhub_client import ModelHubGiftClient
 
             openai_client = ModelHubGiftClient()
+        vision_client = _build_vision_client(openai_client)
     image_client = None
     if not args.dry_run and not args.mock:
         image_client = ImageGenerationClient(provider=args.image_provider)
@@ -117,6 +119,7 @@ def main() -> None:
         generation_attempts=args.generation_attempts,
         generation_concurrency=generation_concurrency,
         evaluate_images=evaluate_images,
+        vision_client=vision_client,
     )
     designs = workflow.build_designs(Path(args.csv).expanduser(), max_rows=max_rows)
     if args.dry_run:
@@ -136,6 +139,28 @@ def _validate_square_image_size(size: str) -> None:
         raise ValueError(
             f"Main workflow images must be 1:1 square. Got {size}; use e.g. 2048x2048."
         )
+
+
+def _build_vision_client(openai_client):
+    """Mainline prompt quality depends on VLM perception slots.
+
+    Reuse the ModelHub client when it is already the design client; otherwise
+    create a dedicated ModelHub client only when its env vars are present.
+    """
+
+    if hasattr(openai_client, "analyze_host_visual_brief"):
+        return openai_client
+    required = ["MODELHUB_API_KEY", "MODELHUB_AZURE_ENDPOINT", "MODELHUB_MODEL"]
+    if not all(os.getenv(key, "").strip() for key in required):
+        print(
+            "VLM perception is not configured; falling back to deterministic "
+            "heuristics. Set MODELHUB_API_KEY, MODELHUB_AZURE_ENDPOINT, and "
+            "MODELHUB_MODEL to enable the current mainline path."
+        )
+        return None
+    from .clients.modelhub_client import ModelHubGiftClient
+
+    return ModelHubGiftClient()
 
 
 if __name__ == "__main__":

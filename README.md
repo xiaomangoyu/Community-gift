@@ -17,7 +17,12 @@
 理想效果库里的好 prompt 和好图不直接参与生图，只参与规则推理和出图验收。
 最终 prompt 默认由 template-first 规则确定性生成；旧的 LLM refiner 仅保留为手动实验开关。
 
-当前调参阶段先不用 VLM。原因是方向、构图、文字和产品颜色这些问题肉眼已经足够明确；此时 VLM 容易把自动重试带偏，也会增加排查噪音。VLM 只作为后续批量生产阶段的可选质检模块，用来做失败类型分类、批量筛图和复盘辅助。
+当前 VLM 分两类使用：
+
+- 上游 VLM perception：可以启用，但只允许输出事实、低层视觉元素和 lightstick 槽位，不写完整 prompt 文案。
+- 下游 VLM evaluation：默认关闭。当前小样调参仍以人工复看为准；后续即使接回，也只输出失败类型和复盘信息，不能直接改写最终 prompt。
+
+2026-05-20 的有效方向是：VLM 做短、结构化、可执行的槽位抽取；deterministic mapper / routers / template-first prompt 负责把槽位稳定装配成最终 prompt。详细复盘见 `references/20260520_vlm_slot_prompt_learnings.md`。
 
 ## 当前架构重点
 
@@ -143,14 +148,14 @@ python3 scripts/run_streamers_debug_preview.py --start 0 --count 5 --dry-run
 IMAGE_PROVIDER=seedream_http
 GENERATION_CONCURRENCY=100
 ENABLE_VLM_EVALUATION=false
-ENABLE_PROMPT_REFINER=false
+EXPERIMENTAL_ENABLE_PROMPT_REFINER=false
 ```
 
 主工作流已硬固定为 `seedream_http` / Seedream 4.5：不会使用 Grok，也不会因为 `SEEDANCE_API_KEY` / `SEEDANCE_BASE_URL` 存在而切到旧 Seedance 网关。`--image-provider` 只接受 `seedream_http`、`seedream`、`seedance` 这些别名。
 
 `GENERATION_CONCURRENCY` 控制按行并发生成和评估的上限；小批量测试时 5 行会同时发起，不再一张一张排队。也可以临时覆盖：
 VLM 审核默认关闭；当前小样调参不建议开启。只有后续需要批量质检时，才显式传 `--evaluate-images` 或设置 `ENABLE_VLM_EVALUATION=true`。
-默认编排方式是 template-first：不让 LLM 从主播数据重新设计 prompt，而是使用稳定参考 prompt 骨架，只填入少量主播变量。最终 prompt 不再默认交给 LLM 自由重写；`routing_trace.json` / `debug_cards/` 会记录 deterministic prompt lint，用于检查 exact text、中文主题词引号、否定句过多、招牌/铭牌类危险词和硬产品锚点。旧的 final LLM refiner 仅保留为手动实验开关，可设置 `ENABLE_PROMPT_REFINER=true` 启用。
+默认编排方式是 template-first：不让 LLM 从主播数据重新设计 prompt，而是使用稳定参考 prompt 骨架，只填入少量主播变量。最终 prompt 不再默认交给 LLM 自由重写；`routing_trace.json` / `debug_cards/` 会记录 deterministic prompt lint，用于检查 exact text、中文主题词引号、否定句过多、招牌/铭牌类危险词和硬产品锚点。旧的 final LLM refiner 已移出主流，只保留为显式实验开关；需要单独传入 `prompt_refiner_client` 并设置 `EXPERIMENTAL_ENABLE_PROMPT_REFINER=true` 才会尝试启用。
 
 ```bash
 python -m community_gift.cli \

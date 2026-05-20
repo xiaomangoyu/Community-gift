@@ -84,7 +84,7 @@ class SymbolForms(BaseModel):
 class ThemeForms(BaseModel):
     primary: SymbolForms = Field(default_factory=SymbolForms)
     secondary: SymbolForms = Field(default_factory=SymbolForms)
-    fusion_note: str = ""  # one short Chinese line if motifs share language
+    fusion_note: str = ""  # optional short structural note; final prompt ignores prose-heavy notes
 
 
 class MoodBlock(BaseModel):
@@ -120,7 +120,7 @@ class HostVisionBrief(BaseModel):
     row_id: int
     host_name: str = ""
     text: TextBlock = Field(default_factory=TextBlock)
-    style_pitch: str = ""  # 1-sentence style framing
+    style_pitch: str = ""  # short style label, not a final-prompt sentence
     palette: PaletteBlock = Field(default_factory=PaletteBlock)
     materials: MaterialsBlock = Field(default_factory=MaterialsBlock)
     signature_symbols: SignatureSymbols = Field(default_factory=SignatureSymbols)
@@ -229,7 +229,7 @@ def _is_emoji(char: str) -> bool:
 # ---------------------------------------------------------------------------
 
 # Bump when schema changes such that older cached briefs would miss fields.
-VISION_SCHEMA_VERSION = 8
+VISION_SCHEMA_VERSION = 9
 
 # Default cache directory — outside source data, can be wiped without risk.
 _DEFAULT_CACHE_DIR = Path("outputs/vision_cache")

@@ -20,8 +20,7 @@ from .host_vision import (
     save_vision_cache,
 )
 from .models import GenerationResult, GiftDesign, ImageEvaluation
-from .prompt_planner import classify_evaluation_failures, update_plan_for_retry
-from .seedance_prompt import build_reference_negative_prompt, build_reference_seedance_prompt
+from .prompt_planner import classify_evaluation_failures
 from .template_first import build_template_first_design
 
 
@@ -62,9 +61,9 @@ class CommunityGiftWorkflow:
         # free-form final rewrite proved too likely to turn hard image
         # instructions into fluent design prose. Keep it available for manual
         # experiments, but make the deterministic template the production path.
-        self.prompt_refiner_client = prompt_refiner_client or vision_client or openai_client
+        self.prompt_refiner_client = prompt_refiner_client
         if refine_prompts is None:
-            refine_prompts = os.getenv("ENABLE_PROMPT_REFINER", "false").lower() not in {
+            refine_prompts = os.getenv("EXPERIMENTAL_ENABLE_PROMPT_REFINER", "false").lower() not in {
                 "0",
                 "false",
                 "no",
@@ -261,8 +260,18 @@ class CommunityGiftWorkflow:
             return
         refiner = getattr(self.prompt_refiner_client, "refine_final_prompt", None)
         if not callable(refiner):
+            for design in designs:
+                design.routing_trace["prompt_refiner"] = {
+                    "enabled": True,
+                    "applied": False,
+                    "reason": "experimental refiner requested but no explicit prompt_refiner_client was provided",
+                    "final_chars": len(design.seedance_prompt),
+                }
             if designs:
-                print("prompt_refiner_client not configured; using template-first prompts.")
+                print(
+                    "experimental prompt refiner requested but prompt_refiner_client "
+                    "is not configured; using template-first prompts."
+                )
             return
 
         workers = min(self.generation_concurrency, max(1, len(designs)))
@@ -376,13 +385,14 @@ class CommunityGiftWorkflow:
                         best_image_path = evaluation.image_path
                 if any(evaluation.passed for evaluation in attempt_evaluations):
                     break
-                update_plan_for_retry(_host_from_design(design), design, attempt_evaluations)
-                if _should_use_reference_lightstick(design.matched_effects):
-                    design.seedance_prompt = build_reference_seedance_prompt(design)
-                    design.seedance_negative_prompt = build_reference_negative_prompt(design)
-                    prompt = design.seedance_prompt
-                else:
-                    prompt = _revise_prompt(prompt, attempt_evaluations, self.evaluation_threshold)
+                # VLM evaluation is now review-only in the main workflow. It may
+                # classify failures for debugging, but it must not append free
+                # text or switch the final prompt away from template_first.
+                if attempt < self.generation_attempts:
+                    print(
+                        f"[{design.row_id}] VLM evaluation did not pass; "
+                        "retrying same deterministic template prompt."
+                    )
             else:
                 continue
 
@@ -817,47 +827,6 @@ def _failed_generation_result(design: GiftDesign, exc: Exception) -> GenerationR
         ],
         best_image_path=None,
         raw_response_path=None,
-    )
-
-
-def _should_use_reference_lightstick(effect_matches) -> bool:
-    return any(
-        match.effect_id == "strong_heart_lightstick_product_series"
-        for match in effect_matches
-    )
-
-
-def _revise_prompt(prompt: str, evaluations, threshold: float) -> str:
-    if not evaluations:
-        return prompt
-    best = max(evaluations, key=lambda item: item.total_score)
-    notes = best.prompt_revision_notes or best.issues
-    if not notes:
-        return prompt
-    revision = " ".join(notes[:6])
-    return (
-        prompt
-        + f"\n\nRevision for next attempt because VLM score {best.total_score:.1f} is below {threshold:.1f}: "
-        + revision
-        + " Highest priority: pure black background, full-body product visibility, no cropping, compact bottom cap fully visible with black margin below."
-    )
-
-
-def _host_from_design(design: GiftDesign):
-    """Small compatibility shim for retry planning when the original HostInput is out of scope."""
-
-    from .models import HostInput
-
-    return HostInput(
-        row_id=design.row_id,
-        host_name=design.host_name,
-        community_name=design.community_name,
-        symbols=design.prompt_plan.retained_elements,
-        banned_elements=design.prompt_plan.banned_elements,
-        primary_color=", ".join(design.prompt_plan.color_terms),
-        material_language_hint=", ".join(design.prompt_plan.material_terms),
-        body_form=design.design_concept.silhouette,
-        recommended_output_type=design.design_concept.effect_type,
     )
 
 

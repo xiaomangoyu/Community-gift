@@ -18,45 +18,23 @@ from ..host_vision import (
 from ..models import GiftDesign, HostInput, ImageEvaluation
 
 
-VISION_BRIEF_WRITING_TEMPLATE = """按下面这个从 Cowhair 强 prompt 抽象出来的模板写当前主播 brief。
-注意:这是写作模板,不是要你输出完整 prompt;你最终仍然只输出 JSON。
+VISION_BRIEF_WRITING_TEMPLATE = """你不是最终 prompt 作者,而是视觉感知与槽位提取器。
+只把主播素材转成可执行的 lightstick 结构槽位,不要写完整生图 prompt,不要写设计散文。
 
-1. 开场产品合同:
-黑色背景,固定45度朝右产品视角,完整展示整支打call棒,灯头/连接处/握柄/底部节点全部清晰。顶部为 {lamp_head_silhouette},中央为 {central_core_material} 实体核心,中间嵌入发光文字 {exact_text}。
-
-2. 风格记忆:
-整体风格围绕 "{exact_text}" 延展,设定为 {primary_symbol} × {material_or_texture_memory} × {idol_collectible_mood},整体气质偏 {mood_phrase},带一点 {streamer_visual_memory} 的视觉记忆。
-=> 写入 style_pitch / mood.phrase。
-
-3. 配色记忆:
-整体配色采用 {main_color}、{secondary_color}、{accent_colors},形成 {palette_family} 的鲜明视觉记忆。主色/主材/中心核心各自负责什么视觉任务要说清楚。
-=> 写入 palette.family/main_color/secondary_color/accent_colors/tags。
-
-4. 材质对比:
-材质以 {dominant_material}、{core_material}、{trim_material}、{surface_finish} 为主,强调 {soft_vs_hard_or_clear_vs_matte_contrast},形成收藏级3D产品质感。
-=> 写入 materials.main/supporting/tags,优先使用图像模型容易执行的产品材质词。
-
-5. 主题解构:
-主题为 {primary_symbol}、{secondary_symbol} 与 {mood_symbol} 的解构设计:
-将 {primary_symbol} 解构为灯头主体的 {primary_forms};
-将 {secondary_symbol} 解构为灯头边缘/连接区/握柄上的 {secondary_forms};
-将气质或内容感转译为 {connector_or_surface_details}。
-=> 写入 signature_symbols 和 theme_forms。每个 forms 必须是能长在产品上的结构,不是平面图案。
-
-6. 灯头主读感:
-整体灯头像一个被 {primary_symbol} 与 {secondary_symbol} 包裹的 {idol_object_metaphor},主轮廓要清晰,中心核心要透亮完整,外部装饰不能遮挡文字与核心结构。
-=> 写入 lamp_head_silhouette / silhouette_language / theme_forms.fusion_note。
-
-7. 文字嵌入:
-文字 {exact_text} 采用 {font_style_memory} 的立体发光字体,具有立体厚度、浮雕感、局部内发光、柔亮描边、嵌入式核心结构感。
-=> 写入 text.style_hint。
-
-8. 手柄与底部节点:
-底部装饰设计为一体化 {theme_bottom_node},加入 {bottom_details},让视觉重点集中在灯头,同时保持整支比例完整、结构协调。
-=> 写入 handle.main_material/surface_treatment/connector_detail/bottom_cap/decoration_continuation。
-
-9. 总强调:
-收藏级产品渲染、强3D体积感、真实材质厚度、清晰主光、边缘轮廓光、材质层次、核心局部发光、整支棒体不做全局霓虹泛光、干净商业海报感。
+字段写法:
+1. style_pitch: 8-18 个中文字符的短标签,例如 "粉紫蝶翼梦幻风" / "暖棕圆润玩具风" / "电蓝王冠街头风"。
+   禁止出现 exact_text、主播名、社群名、引号、"围绕/延展/记忆/社群/守护/凝聚/招牌/标识/铭牌/logo"。
+2. signature_symbols.primary/secondary: 具体可视物象,优先来自 avatar/sticker 明确可见物;不明确时才用 signals。
+   只写物体名,例如 "蝴蝶" / "蜜瓜" / "皇冠" / "拳击手套";不要写人设、情绪、社群名。
+3. lamp_head_silhouette: 8-16 字具体灯头形状,必须能被建模,例如 "双蝶翼包心灯头"、"椭圆薯体拱冠"。
+4. theme_forms.*.forms: 每项 2-6 字,只写结构件,例如 "双翼护片"、"拱形冠齿"、"浅芽眼点"。
+   禁止写平面图案、贴纸、文字、标识、招牌、故事。
+5. palette: 颜色词短而明确; tags 用英文小写下划线,供 router 匹配。
+6. materials: 只选两种主材/辅材,必须是产品材质,例如 "半透明果冻树脂"、"吹制气泡玻璃"、"哑光软皮包覆"。
+7. text.style_hint: 只描述 exact_text 的字形和发光方式,不要出现招牌/标题/铭牌/logo/wordmark。
+8. handle 五个字段: 写成短产品槽位,描述握柄材质、表面、连接、底盖、主题延续;不要写否定句。
+9. mood.phrase: 4-6 个短气质词,用顿号分隔;不要写长句。
+10. fusion_note: 默认留空;只有两个物象必须解释如何融合时,写 20 字以内结构说明。
 """
 
 
@@ -111,13 +89,13 @@ class ModelHubGiftClient:
             "characterization": raw.get("characterization", ""),
         }
         instruction = (
-            "你是 TikTok 直播社群应援棒礼物的视觉设计 brief 生成器。"
+            "你是 TikTok 直播社群应援棒礼物的视觉感知与槽位提取器。"
             "根据提供的主播视觉素材(avatar 或 sticker)与 signals 摘要,产出一份"
-            "**结构化的 JSON brief**,用于驱动一支高级实体应援棒(lightstick)的设计。"
+            "**结构化的 JSON brief**,用于驱动 deterministic template 生成高级实体应援棒(lightstick)。"
             "\n\n最高优先级写作模板:\n"
             f"{VISION_BRIEF_WRITING_TEMPLATE}"
-            "\n\n参考输出风格示例(节奏/词汇/具体程度,但不要照搬词组):\n"
-            "  - style_pitch 例:甜酷果冻系守护精灵风 / 温柔梦幻紫色爱心偶像应援风 / 热带海岛夜晚应援风\n"
+            "\n\n字段示例(只学字段粒度,不要扩写成句子):\n"
+            "  - style_pitch 例:甜酷果冻精灵风 / 紫色爱心梦幻风 / 热带海岛夜光风\n"
             "  - palette.family 例:甜冷糖果系 / 烟灰冷调 / 暖橙海岛系 / 紫色梦幻系\n"
             "  - materials.main 例:高光半透明果冻树脂 / 珠光奶油釉面塑胶 / 镜面珐琅\n"
             "  - theme_forms.primary.forms 例:[\"双果鼓包\",\"果冻球体\",\"果梗线\",\"叶片状小护片\"]\n"
@@ -153,7 +131,9 @@ class ModelHubGiftClient:
             "重点:避免心形 / 圆形默认,优先选择能区分这位主播的独特轮廓。\n"
             "8. **handle 五个字段全部填写**,不能空白。handle 是与灯头同等重要的视觉部分,"
             "材质/连接件/底盖必须延续主题色与材质语言。\n"
-            "9. **材质必须有显著差异性**。从下列 8 个材质家族里挑一个作为**主导家族**,"
+            "9. 所有字段必须短、结构化、可被 template 直接拼接;不要输出完整 prompt 句式,不要写营销文案。"
+            "禁止词:招牌、标题、标识、铭牌、牌匾、logo、wordmark、社群凝聚、守护感、记忆延展、圣物。\n"
+            "10. **材质必须有显著差异性**。从下列 8 个材质家族里挑一个作为**主导家族**,"
             "辅助材质必须来自**另一个不同家族**形成对比。不允许两项都属同一家族:\n"
             "   A. 树脂家族 — 高光半透明果冻树脂、珠光釉面塑胶、糖果硬树脂\n"
             "   B. 金属家族 — 拉丝铝、阳极氧化枪灰、镜面铬、做旧黄铜、玫瑰金\n"
@@ -169,7 +149,7 @@ class ModelHubGiftClient:
             "   - 其次从 characterization 中的内容形态(只有真正的 KO/PUBG/Free Fire/PK 才算 military)\n"
             "   - 文化暗示(异域/沙漠 → 黄铜 + 沙岩;海岛 → 玻璃 + 贝母;都市夜店 → 喷漆 + 玻璃;市井日常 → 陶 + 木)\n"
             "主辅之间必须有视觉对比:光泽 vs 磨砂、硬 vs 软、冷 vs 暖、反射 vs 吸光。\n"
-            "10. 只输出 JSON object,不要 markdown,不要解释文字。"
+            "11. 只输出 JSON object,不要 markdown,不要解释文字。"
         )
         payload = {
             "row_id": host.row_id,
@@ -188,7 +168,7 @@ class ModelHubGiftClient:
                 "script": "latin | korean | arabic | chinese | mixed | empty",
                 "style_hint": "Chinese description of font character",
             },
-            "style_pitch": "1-sentence Chinese style framing",
+            "style_pitch": "short Chinese style label, 8-18 chars, no exact_text/name/prose",
             "palette": {
                 "family": "Chinese palette family",
                 "main_color": "Chinese color word",
