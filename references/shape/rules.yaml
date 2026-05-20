@@ -77,7 +77,7 @@ rules:
   - id: crown
     when:
       - field: derived.primary_symbol_text
-        contains_any: ["皇冠", "crown", "queen", "king", "rey"]
+        contains_any: ["皇冠", "王冠", "crown", "queen", "king", "rey"]
     apply:
       silhouette: "crown lamp head"
       theme_title: "皇冠竞技感 × 顶流舞台感 × 高光偶像收藏风"

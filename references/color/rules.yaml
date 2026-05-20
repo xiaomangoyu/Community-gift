@@ -68,7 +68,7 @@ rules:
     when:
       - or:
           - field: derived.symbol_text
-            contains_any: ["皇冠", "crown", "queen", "king", "rey"]
+            contains_any: ["皇冠", "王冠", "crown", "queen", "king", "rey"]
           - field: host.live_vibe
             contains_any: ["竞技", "battle", "胜利", "高能"]
           - field: host.content_type

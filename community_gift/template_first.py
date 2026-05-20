@@ -9,6 +9,7 @@ f-string so it is easy to diff visually.
 from __future__ import annotations
 
 import os
+import re
 import unicodedata
 
 from .host_brief import HostBrief, RetrievalIntent, build_host_brief, derive_retrieval_intent
@@ -294,21 +295,27 @@ def _apply_vision_overrides(slots: dict, vision: HostVisionBrief) -> None:
     if vision.text.exact_text:
         slots["display_text"] = vision.text.exact_text
     if vision.text.style_hint:
-        slots["text_style"] = vision.text.style_hint
+        slots["text_style"] = _sanitize_text_style(vision.text.style_hint)
 
     if vision.style_pitch:
-        slots["theme_title"] = vision.style_pitch
+        slots["theme_title"] = _compact_style_pitch(
+            vision.style_pitch,
+            display_text=slots.get("display_text", ""),
+        )
     if vision.mood.phrase:
-        slots["mood"] = vision.mood.phrase
+        slots["mood"] = _sanitize_text_label_language(vision.mood.phrase)
     if vision.silhouette_language:
         slots["silhouette_language"] = vision.silhouette_language
     if vision.lighting:
         slots["lighting"] = vision.lighting
-    if vision.theme_forms.fusion_note:
-        slots["fusion_note"] = vision.theme_forms.fusion_note
+    # Do not pass raw VLM fusion_note into the final prompt. It tends to be
+    # prose-heavy and repeats the Chinese theme word near text/core language.
 
     primary_prose = _format_symbol_forms(vision.theme_forms.primary)
     if primary_prose:
+        primary_symbol = str(vision.theme_forms.primary.symbol or "").strip()
+        if primary_symbol:
+            primary_prose = primary_prose.replace(f"将{primary_symbol}解构为", "主体符号解构为")
         slots["symbol_translation"] = primary_prose
     secondary_prose = _format_symbol_forms(vision.theme_forms.secondary)
     if secondary_prose:
@@ -336,7 +343,7 @@ def _apply_vision_overrides(slots: dict, vision: HostVisionBrief) -> None:
         slots["materials"] = material_terms
 
     # Override primary/secondary symbol display text too, so the prompt's
-    # backticked references ("主题为「X」的解构设计") use the visual concept
+    # theme references use the visual concept
     # instead of the streamer's plain name.
     if vision.signature_symbols.primary:
         slots["primary_symbol"] = vision.signature_symbols.primary
@@ -363,14 +370,18 @@ def _format_handle(handle) -> str:
     if handle.surface_treatment:
         parts.append(f"表面处理为{handle.surface_treatment}")
     if handle.connector_detail:
-        parts.append(f"连接处搭配{handle.connector_detail}")
+        connector = str(handle.connector_detail).strip()
+        if connector.startswith("连接处"):
+            parts.append(connector)
+        else:
+            parts.append(f"连接处搭配{connector}")
     if handle.bottom_cap:
         parts.append(f"底盖设计为{handle.bottom_cap}")
     if handle.decoration_continuation:
         parts.append(f"主题延续上，{handle.decoration_continuation}")
     if len(parts) < 2:
         return ""
-    return "。".join(parts) + "。"
+    return _sanitize_text_label_language("。".join(parts) + "。")
 
 
 def _format_symbol_forms(forms) -> str:
@@ -379,7 +390,7 @@ def _format_symbol_forms(forms) -> str:
     if not forms or not forms.symbol or not forms.forms:
         return ""
     position = forms.position or "灯头主体"
-    return f"将「{forms.symbol}」解构为{position}的{'、'.join(forms.forms)}"
+    return f"将{forms.symbol}解构为{position}的{'、'.join(forms.forms)}"
 
 
 def _select_display_text(host: HostInput, brief: HostBrief) -> tuple[str, str]:
@@ -472,35 +483,40 @@ def _build_prompt(slots: dict) -> str:
     )
     lamp_head_silhouette = (
         slots.get("lamp_head_silhouette")
-        or f"以「{slots['primary_symbol']}」为核心的一体化立体灯头"
+        or f"以{slots['primary_symbol']}为核心的一体化立体灯头"
     )
     handle_phrase = slots.get("handle_phrase") or (
         "握柄主体延续主题材质，与灯头形成同语义的视觉一体化。"
     )
-    handle_phrase = _soften_handle_phrase(handle_phrase)
-    bottom_node = _soften_handle_phrase(slots["bottom_node"])
+    handle_phrase = _sanitize_text_label_language(_soften_handle_phrase(handle_phrase))
+    bottom_node = _sanitize_text_label_language(_soften_handle_phrase(slots["bottom_node"]))
+    bottom_sentence = (
+        f"{bottom_node}，与手柄整体协调。"
+        if bottom_node.startswith(("底部", "底盖", "尾端", "底端"))
+        else f"底部装饰为{bottom_node}，与手柄整体协调。"
+    )
     script_guidance = _text_script_guidance(slots["display_text"])
 
     prompt = f"""黑色背景，1:1 正方形画面，固定 45 度朝右产品视角，完整展示整支打call棒，从灯头、连接处、握柄到底部节点全部清晰可见，主体居中，高精度3D收藏级应援棒。灯头是视觉重心，握柄短而完整，整体是一体连续的圆润产品造型。顶部为{lamp_head_silhouette}，中央为完整饱满的实体核心，中间嵌入发光文字「{slots['display_text']}」。
 
-整体风格围绕「{slots['primary_symbol']}」延展，设定为{slots['theme_title']}，整体气质偏{slots['mood']}。
+整体风格围绕{slots['primary_symbol']}主题延展，设定为{slots['theme_title']}，整体气质偏{slots['mood']}。
 
-整体配色采用{colors}（主色锚点「{slots['color_anchor']}」，来自{slots['palette_name']}）。背景保持纯黑棚拍质感；如果主题需要深色，用烟灰、枪灰、珠光灰或深色透明树脂表达，让产品边缘和材质层次仍然清楚。
+整体配色采用{colors}（主色锚点为{slots['color_anchor']}，来自{slots['palette_name']}）。背景保持纯黑棚拍质感；如果主题需要深色，用烟灰、枪灰、珠光灰或深色透明树脂表达，让产品边缘和材质层次仍然清楚。
 
 材质以{materials}为主，整体强调圆润实体厚度、材质对比、精致倒角、收藏级产品质感。亮面硬质饰件只作为薄边、微小徽章或少量连接点出现；皮革、织物或护具感元素转译为连续哑光包覆、浅压纹和干净表面。打光以{lighting_phrase}为主，重点表现真实厚度、清晰倒角、柔和受控高光。
 
-主题为「{slots['primary_symbol']}」的解构设计：{slots['symbol_translation']}{secondary_clause}。{fusion_clause}所有外扩装饰、包边、护片或框架都与灯头主体一体成型，中央核心保持完整饱满，不做空心镂空，也不做贴纸式平面图案。
+主题为{slots['primary_symbol']}的解构设计：{slots['symbol_translation']}{secondary_clause}。{fusion_clause}所有外扩装饰、包边、护片或框架都与灯头主体一体成型，中央核心保持完整饱满，不做空心镂空，也不做贴纸式平面图案。
 
-让整体灯头像一个被「{slots['primary_symbol']}」包裹塑造的收藏级应援圣物，既有偶像应援感，也有独特的个人辨识度。整体轮廓语言强调{slots['silhouette_language']}，从正面和侧面都能读出清楚的立体结构。
+让整体灯头像一个被主题轮廓包裹塑造的收藏级应援圣物，既有偶像应援感，也有独特的个人辨识度。整体轮廓语言强调{slots['silhouette_language']}，从正面和侧面都能读出清楚的立体结构。
 
 文字「{slots['display_text']}」自然嵌入灯头中央实体核心。{slots['text_style']}。{script_guidance}画面中只出现这一处主文字，文字与核心结构融合，不做外接文字牌。
 
-手柄设计：{handle_phrase}手柄保持短而饱满的握把比例，与灯头自然连接，不做细长法杖感。底部装饰为{bottom_node}，与手柄整体协调。
+手柄设计：{handle_phrase}手柄保持短而饱满的握把比例，与灯头自然连接，不做细长法杖感。{bottom_sentence}
 
 整体气质：{slots['mood']}，带有偶像周边收藏感。
 
 整体强调：收藏级实体产品渲染、强3D体积感、真实材质厚度、克制明暗层次、文字与中央核心局部发光、整支棒体不做全局霓虹泛光、干净棚拍产品感。整支打call棒完整入画，灯头、连接件、完整手柄和底部节点都清晰可见，产品像悬浮在纯黑摄影棚中。"""
-    return _polish_prompt_text(prompt)
+    return _polish_prompt_text(_reserve_quotes_for_display_text(prompt, slots["display_text"]))
 
 
 def _build_negative_prompt(slots: dict) -> str:
@@ -630,10 +646,85 @@ def _polish_prompt_text(text: str) -> str:
         "；。": "。",
         "，。": "。",
         "主题延续上,": "主题延续上，",
+        "连接处搭配连接处": "连接处",
+        "底部装饰为底部": "底部",
     }
     for src, dst in replacements.items():
         text = text.replace(src, dst)
     return text.strip()
+
+
+def _compact_style_pitch(text: str, display_text: str = "") -> str:
+    """Turn VLM prose into a short theme label before it reaches the prompt."""
+
+    value = str(text or "").strip()
+    if not value:
+        return ""
+    if display_text:
+        value = value.replace(f"“{display_text}”", "").replace(f"「{display_text}」", "")
+        value = value.replace(display_text, "")
+    value = re.sub(r"围绕[，。]*延展为", "", value)
+    value = re.sub(r"围绕.*?延展为", "", value)
+    value = re.sub(r"整体围绕.*?延展为", "", value)
+    value = value.split("，", 1)[0].split("。", 1)[0].strip(" ：:，。")
+    value = _sanitize_text_label_language(value)
+    if len(value) > 36:
+        value = value[:36].rstrip("、× /")
+    return value or "个性化收藏级应援风"
+
+
+def _sanitize_text_style(text: str) -> str:
+    value = str(text or "").strip()
+    value = _sanitize_text_label_language(value)
+    return value
+
+
+def _sanitize_text_label_language(text: str) -> str:
+    replacements = {
+        "招牌感": "舞台灯光感",
+        "招牌": "灯光",
+        "标题牌": "立体字标",
+        "标题": "字标",
+        "灯牌感": "灯光感",
+        "灯牌": "灯光",
+        "铭牌": "内嵌字标",
+        "牌匾": "立体字标",
+        "标识": "字标",
+        "logo": "字标",
+        "wordmark": "字标",
+    }
+    for src, dst in replacements.items():
+        text = text.replace(src, dst)
+    return text
+
+
+def _reserve_quotes_for_display_text(text: str, display_text: str) -> str:
+    """Keep quotes only around the exact render text, not Chinese theme labels."""
+
+    display_text = (display_text or "").strip()
+    placeholders: dict[str, str] = {}
+    if display_text:
+        for idx, wrapped in enumerate(
+            [
+                f"「{display_text}」",
+                f"“{display_text}”",
+                f'"{display_text}"',
+                f"'{display_text}'",
+            ]
+        ):
+            token = f"__DISPLAY_TEXT_QUOTE_{idx}__"
+            if wrapped in text:
+                placeholders[token] = wrapped
+                text = text.replace(wrapped, token)
+
+    text = re.sub(r"「([^」]*[\u4e00-\u9fff][^」]*)」", r"\1", text)
+    text = re.sub(r"“([^”]*[\u4e00-\u9fff][^”]*)”", r"\1", text)
+    text = re.sub(r'"([^"\n]*[\u4e00-\u9fff][^"\n]*)"', r"\1", text)
+    text = re.sub(r"'([^'\n]*[\u4e00-\u9fff][^'\n]*)'", r"\1", text)
+
+    for token, wrapped in placeholders.items():
+        text = text.replace(token, wrapped)
+    return text
 
 
 def _soften_anchor_terms(terms: list[str]) -> list[str]:

@@ -43,7 +43,7 @@ WEIGHTS = {
 STRONG_QUALITY_BONUS = 0.5
 WEAK_TEXT_ONLY_TAGS = {"latin", "short", "long"}
 GENERIC_VIBE_TAGS = {"energetic", "powerful", "dramatic", "idol_support"}
-GENERIC_FALLBACK_REFERENCE_ID = os.getenv("REFERENCE_GENERIC_FALLBACK_ID", "jelly_fruit_juicy")
+GENERIC_FALLBACK_REFERENCE_ID = os.getenv("REFERENCE_GENERIC_FALLBACK_ID", "mascot_cherry_jelly")
 
 
 @dataclass

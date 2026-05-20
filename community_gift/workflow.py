@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
+import os
 import re
 from pathlib import Path
 
@@ -34,7 +35,7 @@ def slugify(value: str) -> str:
 class CommunityGiftWorkflow:
     def __init__(
         self,
-        openai_client: GiftOpenAIClient,
+        openai_client: GiftOpenAIClient | None,
         image_client: ImageGenerationClient | None,
         output_dir: Path,
         effect_library: EffectLibrary | None = None,
@@ -43,6 +44,8 @@ class CommunityGiftWorkflow:
         generation_concurrency: int = 100,
         evaluate_images: bool = False,
         vision_client=None,
+        prompt_refiner_client=None,
+        refine_prompts: bool | None = None,
     ) -> None:
         self.openai_client = openai_client
         self.image_client = image_client
@@ -55,6 +58,19 @@ class CommunityGiftWorkflow:
         # Vision client: must expose ``analyze_host_visual_brief(host) -> HostVisionBrief``.
         # When None, build_host_brief falls back to heuristic-only mode.
         self.vision_client = vision_client
+        # Prompt refiner is optional and intentionally off by default. The
+        # free-form final rewrite proved too likely to turn hard image
+        # instructions into fluent design prose. Keep it available for manual
+        # experiments, but make the deterministic template the production path.
+        self.prompt_refiner_client = prompt_refiner_client or vision_client or openai_client
+        if refine_prompts is None:
+            refine_prompts = os.getenv("ENABLE_PROMPT_REFINER", "false").lower() not in {
+                "0",
+                "false",
+                "no",
+                "off",
+            }
+        self.refine_prompts = refine_prompts
 
     def build_designs(self, csv_path: Path, max_rows: int | None = None) -> list[GiftDesign]:
         """Read a CSV and build designs. Thin wrapper around :meth:`build_designs_from_hosts`.
@@ -101,6 +117,9 @@ class CommunityGiftWorkflow:
             )
             briefs.append(brief)
             designs.append(design)
+
+        self._refine_design_prompts(designs)
+        self._lint_design_prompts(designs)
 
         write_designs_csv(designs, self.output_dir / "structured_designs.csv")
         write_designs_json(designs, self.output_dir / "structured_designs.json")
@@ -230,6 +249,63 @@ class CommunityGiftWorkflow:
         _write_run_summary(self.output_dir, results)
         return results
 
+    def _refine_design_prompts(self, designs: list[GiftDesign]) -> None:
+        if not self.refine_prompts:
+            for design in designs:
+                design.routing_trace["prompt_refiner"] = {
+                    "enabled": False,
+                    "applied": False,
+                    "reason": "disabled; using deterministic template-first prompt",
+                    "final_chars": len(design.seedance_prompt),
+                }
+            return
+        refiner = getattr(self.prompt_refiner_client, "refine_final_prompt", None)
+        if not callable(refiner):
+            if designs:
+                print("prompt_refiner_client not configured; using template-first prompts.")
+            return
+
+        workers = min(self.generation_concurrency, max(1, len(designs)))
+        if not designs:
+            return
+        print(f"Refining {len(designs)} final prompt(s) with LLM (workers={workers}).")
+
+        def _run(design: GiftDesign) -> None:
+            original = design.seedance_prompt
+            try:
+                refined = refiner(design)
+            except Exception as exc:
+                design.routing_trace["prompt_refiner"] = {
+                    "applied": False,
+                    "error": str(exc),
+                    "draft_chars": len(original),
+                    "final_chars": len(original),
+                }
+                print(f"[{design.row_id}] prompt refiner failed: {exc}")
+                return
+            if refined and refined != original:
+                design.seedance_prompt = refined
+            design.routing_trace["prompt_refiner"] = {
+                "applied": bool(refined and refined != original),
+                "draft_chars": len(original),
+                "final_chars": len(design.seedance_prompt),
+                "ratio": round(len(design.seedance_prompt) / max(1, len(original)), 3),
+            }
+
+        if workers <= 1 or len(designs) <= 1:
+            for design in designs:
+                _run(design)
+            return
+
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = [executor.submit(_run, design) for design in designs]
+            for future in as_completed(futures):
+                future.result()
+
+    def _lint_design_prompts(self, designs: list[GiftDesign]) -> None:
+        for design in designs:
+            design.routing_trace["prompt_lint"] = _lint_prompt(design)
+
     def _generate_one_design(self, design: GiftDesign) -> GenerationResult:
         image_dir = self.output_dir / "images"
         basename = f"{design.row_id:03d}_{slugify(design.host_name or design.community_name)}"
@@ -345,6 +421,149 @@ def _write_routing_trace(output_path: Path, designs: list[GiftDesign]) -> None:
     )
 
 
+_TEXT_DANGER_TERMS = [
+    "招牌",
+    "标题",
+    "标识",
+    "铭牌",
+    "牌匾",
+    "字样",
+    "logo",
+    "wordmark",
+]
+_NEGATIVE_MARKERS = ["不是", "不要", "不做", "不能", "不出现", "避免", "不加", "不增", "不被"]
+_PRODUCT_ANCHORS = [
+    ("black_background", ["黑色背景", "纯黑背景", "黑色棚拍", "纯黑摄影棚"]),
+    ("angle_45", ["45度", "45 度"]),
+    ("full_body", ["完整展示整支", "整支完整入画", "完整入画"]),
+    ("lightstick", ["打call棒", "应援棒"]),
+    ("lamp_head", ["灯头"]),
+    ("handle", ["握柄", "手柄"]),
+    ("bottom", ["底部节点", "底盖", "尾盖"]),
+]
+
+
+def _lint_prompt(design: GiftDesign) -> dict:
+    prompt = design.seedance_prompt or ""
+    exact_text = (design.text_plan.exact_text or "").strip()
+    primary_symbol = (design.design_concept.primary_symbol or "").strip()
+    exact_count = prompt.count(exact_text) if exact_text else 0
+    primary_symbol_count = prompt.count(primary_symbol) if primary_symbol else 0
+    quoted_cjk_terms = _non_exact_quoted_cjk_terms(prompt, exact_text)
+    danger_counts = {
+        term: prompt.lower().count(term.lower())
+        for term in _TEXT_DANGER_TERMS
+        if prompt.lower().count(term.lower())
+    }
+    negative_marker_count = sum(prompt.count(marker) for marker in _NEGATIVE_MARKERS)
+    missing_anchors = [
+        rule_id
+        for rule_id, terms in _PRODUCT_ANCHORS
+        if not any(term in prompt for term in terms)
+    ]
+
+    issues: list[dict] = []
+    if exact_text and exact_count == 0:
+        issues.append(
+            {
+                "severity": "error",
+                "rule_id": "missing_exact_text",
+                "detail": f"exact_text {exact_text!r} is absent from final prompt",
+            }
+        )
+    if exact_count > 3:
+        issues.append(
+            {
+                "severity": "warning",
+                "rule_id": "repeated_exact_text",
+                "detail": f"exact_text appears {exact_count} times; keep it concentrated",
+            }
+        )
+    if quoted_cjk_terms:
+        issues.append(
+            {
+                "severity": "warning",
+                "rule_id": "quoted_non_exact_cjk",
+                "detail": "Chinese non-exact theme terms appear in quotes",
+                "examples": quoted_cjk_terms[:5],
+            }
+        )
+    if primary_symbol and primary_symbol_count > 5:
+        issues.append(
+            {
+                "severity": "warning",
+                "rule_id": "primary_symbol_overused",
+                "detail": f"primary symbol {primary_symbol!r} appears {primary_symbol_count} times",
+            }
+        )
+    if negative_marker_count > 10:
+        issues.append(
+            {
+                "severity": "warning",
+                "rule_id": "too_many_negative_phrases",
+                "detail": f"positive prompt contains {negative_marker_count} negative phrases",
+            }
+        )
+    if sum(danger_counts.values()) > 4:
+        issues.append(
+            {
+                "severity": "warning",
+                "rule_id": "text_label_language",
+                "detail": "prompt may overuse sign/nameplate/label words",
+                "counts": danger_counts,
+            }
+        )
+    if missing_anchors:
+        issues.append(
+            {
+                "severity": "error",
+                "rule_id": "missing_product_anchor",
+                "detail": "final prompt is missing one or more hard product anchors",
+                "missing": missing_anchors,
+            }
+        )
+    if len(prompt) > 1800:
+        issues.append(
+            {
+                "severity": "warning",
+                "rule_id": "prompt_too_long",
+                "detail": f"prompt has {len(prompt)} chars; prefer tighter final prompts",
+            }
+        )
+
+    return {
+        "prompt_chars": len(prompt),
+        "exact_text": exact_text,
+        "exact_text_count": exact_count,
+        "primary_symbol": primary_symbol,
+        "primary_symbol_count": primary_symbol_count,
+        "quoted_non_exact_cjk_terms": quoted_cjk_terms[:10],
+        "negative_marker_count": negative_marker_count,
+        "text_danger_counts": danger_counts,
+        "missing_product_anchors": missing_anchors,
+        "issue_count": len(issues),
+        "issues": issues,
+    }
+
+
+def _non_exact_quoted_cjk_terms(prompt: str, exact_text: str) -> list[str]:
+    terms = []
+    seen = set()
+    patterns = [
+        r"「([^」]*[\u4e00-\u9fff][^」]*)」",
+        r"“([^”]*[\u4e00-\u9fff][^”]*)”",
+        r'"([^"\n]*[\u4e00-\u9fff][^"\n]*)"',
+    ]
+    for pattern in patterns:
+        for term in re.findall(pattern, prompt):
+            clean = term.strip()
+            if not clean or clean == exact_text or clean in seen:
+                continue
+            terms.append(clean)
+            seen.add(clean)
+    return terms
+
+
 def _write_composite_inputs(
     output_dir: Path,
     designs: list[GiftDesign],
@@ -422,6 +641,8 @@ def _write_debug_cards(
         color = trace.get("color", {})
         shape = trace.get("shape", {})
         reference = trace.get("reference", {})
+        prompt_refiner = trace.get("prompt_refiner", {})
+        prompt_lint = trace.get("prompt_lint", {})
         picks = (reference.get("fields") or {}).get("picks", []) or []
 
         lines = [
@@ -519,8 +740,14 @@ def _write_debug_cards(
                 f"- prompt_chars: {len(design.seedance_prompt)}",
                 f"- negative_prompt_chars: {len(design.seedance_negative_prompt)}",
                 f"- reference_pairs: {len(design.reference_pairs)}",
+                f"- prompt_refiner: enabled={prompt_refiner.get('enabled', bool(prompt_refiner.get('applied')))} applied={prompt_refiner.get('applied', False)}",
+                f"- prompt_lint_issues: {prompt_lint.get('issue_count', 0)}",
             ]
         )
+        for issue in prompt_lint.get("issues", []) or []:
+            lines.append(
+                f"- lint {issue.get('severity', 'warning')}: `{issue.get('rule_id', '')}` - {issue.get('detail', '')}"
+            )
 
         slug = slugify(design.host_name) or f"row{design.row_id}"
         (output_dir / f"{design.row_id:03d}__{slug}.md").write_text(

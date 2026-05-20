@@ -97,7 +97,7 @@ _SYMBOL_TAG_ONTOLOGY: dict[str, dict[str, list[str]]] = {
         "vibe": ["playful", "designer_toy"],
     },
     "crown": {
-        "hooks": ["皇冠", "crown", "queen", "king", "rey"],
+        "hooks": ["皇冠", "王冠", "crown", "queen", "king", "rey"],
         "shape": ["crown"],
         "color": ["gold"],
         "vibe": ["battle"],

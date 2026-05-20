@@ -87,7 +87,7 @@ _SHAPE_INFERENCE: dict[str, list[str]] = {
     "butterfly": ["蝴蝶", "butterfly", "나비"],
     "wing": ["翅膀", "wing", "羽翼", "feather"],
     "heart": ["爱心", "heart", "💕", "💜", "心"],
-    "crown": ["皇冠", "crown", "queen", "king", "rey"],
+    "crown": ["皇冠", "王冠", "crown", "queen", "king", "rey"],
     "hat": ["帽", "hat", "sombrero"],
     "mascot": ["土豆", "potato", "mascot", "圆润", "spud"],
     "shell": ["龟壳", "shell", "turtle"],
@@ -392,7 +392,7 @@ def _duplicates(left: str, right: str) -> bool:
     groups = [
         ["black bird", "bird", "黑鸟", "鸟"],
         ["potato", "土豆", "spud"],
-        ["crown", "皇冠"],
+        ["crown", "皇冠", "王冠"],
         ["hat", "sombrero", "帽"],
         ["wing", "翅膀", "翼", "butterfly", "蝴蝶"],
     ]

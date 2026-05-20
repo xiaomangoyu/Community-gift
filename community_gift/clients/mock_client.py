@@ -4,6 +4,9 @@ from ..models import GiftDesign, ImageEvaluation
 
 
 class MockGiftClient:
+    def refine_final_prompt(self, design: GiftDesign) -> str:
+        return design.seedance_prompt
+
     def evaluate_candidate_image(
         self,
         image_path: str,
