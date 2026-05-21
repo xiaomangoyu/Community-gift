@@ -23,6 +23,7 @@ Why this layer exists
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -79,6 +80,26 @@ def derive_retrieval_intent(brief: "HostBrief") -> RetrievalIntent:
 
 
 # ---------------------------------------------------------------------------
+# CreativeProfile — optional controlled divergence layer.
+# ---------------------------------------------------------------------------
+
+
+class CreativeProfile(BaseModel):
+    """How far the final prompt may diverge from the stable baseline.
+
+    The baseline prompt remains the default. ``expressive`` / ``wild`` only
+    unlock stronger contour, tactile, and edge details when upstream data or
+    deterministic inference says the streamer can carry that treatment.
+    """
+
+    mode: str = "baseline"  # baseline | expressive | wild
+    intensity: int = 0      # 0-3, where 0 means no extra creative push
+    axes: list[str] = Field(default_factory=list)
+    source: str = "baseline"  # explicit | derived | baseline
+    notes: str = ""
+
+
+# ---------------------------------------------------------------------------
 # Inference dictionaries — Chinese / mixed-text keywords → English tags.
 # Centralised here (used to be inside reference_router.py).
 # ---------------------------------------------------------------------------
@@ -86,8 +107,24 @@ def derive_retrieval_intent(brief: "HostBrief") -> RetrievalIntent:
 _SHAPE_INFERENCE: dict[str, list[str]] = {
     "butterfly": ["蝴蝶", "butterfly", "나비"],
     "wing": ["翅膀", "wing", "羽翼", "feather"],
-    "heart": ["爱心", "heart", "💕", "💜", "心"],
+    "heart": ["爱心", "心形", "heart", "💕", "💜"],
+    "star": ["星", "星形", "星星", "star"],
     "crown": ["皇冠", "王冠", "crown", "queen", "king", "rey"],
+    "potato": ["土豆", "马铃薯", "potato", "spud"],
+    "melon": ["蜜瓜", "哈密瓜", "melon", "🍈"],
+    "baseball_cap": ["棒球帽", "baseball cap"],
+    "boxing_glove": ["拳击手套", "拳套", "boxing glove"],
+    "dragon": ["龙", "dragon"],
+    "lightning": ["闪电", "电光", "lightning", "thunderbolt"],
+    "horn": ["牛角", "兽角", "弯角", "角弧", "horn"],
+    "cow_horn": ["牛角", "公牛", "bull", "cow_horn"],
+    "fur": ["长毛", "毛发", "毛绒", "皮草", "鬃毛", "fur"],
+    "hair": ["长发", "头发", "发束", "毛流", "hair"],
+    "claw": ["爪片", "利爪", "豹爪", "claw"],
+    "fang": ["獠牙", "尖牙", "牙", "fang"],
+    "spike": ["尖刺", "角刺", "星刺", "尖晶", "spike", "stud"],
+    "scale": ["鳞", "鳞片", "scale"],
+    "crest": ["冠羽", "脊冠", "crest"],
     "hat": ["帽", "hat", "sombrero"],
     "mascot": ["土豆", "potato", "mascot", "圆润", "spud"],
     "shell": ["龟壳", "shell", "turtle"],
@@ -99,12 +136,17 @@ _SHAPE_INFERENCE: dict[str, list[str]] = {
 _COLOR_INFERENCE: dict[str, list[str]] = {
     "purple": ["紫", "purple", "葡萄", "薰衣草", "lavender"],
     "pink": ["粉", "pink", "rose", "magenta", "玫瑰"],
+    "hot_pink": ["亮粉", "热粉", "荧光粉", "hot pink"],
+    "candy_pink": ["糖果粉", "candy pink", "candy_pink"],
+    "electric_pink": ["电光粉", "霓虹粉", "electric pink", "electric_pink"],
     "red": ["红", "red", "珊瑚", "coral", "cherry"],
     "blue": ["蓝", "blue", "霓虹蓝", "neon_blue"],
     "green": ["绿", "green", "mint", "pistachio", "薄荷"],
     "gold": ["金", "gold", "champagne", "香槟"],
     "white": ["白", "white", "pearl", "珠光", "cream"],
     "silver": ["银", "silver"],
+    "silver_white": ["银白", "冷银", "silver white", "silver_white"],
+    "pearl_white": ["珠光白", "珍珠白", "白光", "pearl white", "pearl_white"],
     "smoke_pink": ["烟粉", "smoke pink"],
     "pearl": ["珠光", "pearl"],
     "graphite": ["烟灰", "graphite", "枪灰"],
@@ -124,6 +166,102 @@ _VIBE_INFERENCE: dict[str, list[str]] = {
     "designer_toy": ["潮玩", "designer toy", "玩具"],
     "idol_support": ["偶像", "应援", "idol"],
     "sweet_cool": ["甜酷", "sweet cool"],
+    "glamorous": ["华丽", "妖冶", "glamorous", "glam"],
+    "wild": ["野性", "野感", "兽感", "wild", "feral"],
+    "edgy": ["锋利", "尖锐", "叛逆", "edgy"],
+    "bold": ["张扬", "大胆", "bold"],
+    "luxury_collectible": ["奢闪", "轻奢", "收藏级", "luxury"],
+}
+
+_MATERIAL_INFERENCE: dict[str, list[str]] = {
+    "fiber_hair": ["长毛", "毛发", "发束", "毛流", "鬃毛", "真实毛发", "fiber_hair"],
+    "fur": ["长毛", "毛绒", "皮草", "fur"],
+    "hair": ["头发", "长发", "hair"],
+    "feather": ["羽毛", "羽片", "feather"],
+    "scale_texture": ["鳞", "鳞片", "scale"],
+    "leather_wrap": ["皮革", "软皮", "leather"],
+    "mirror_metal": ["镜面", "银白", "冷银", "mirror"],
+    "glossy_resin": ["树脂", "糖果", "果冻", "resin"],
+    "translucent_jelly": ["半透明", "果冻", "jelly"],
+    "pearl_coating": ["珠光", "pearl"],
+}
+
+_CREATIVE_AXIS_INFERENCE: dict[str, list[str]] = {
+    "feather": ["bird", "wing", "swept_wing", "羽翼", "翅膀", "展翼", "鸟", "乌鸦", "黑鸟", "鹰", "猎鹰", "raven", "crow", "falcon", "eagle"],
+    "horn": ["horn", "cow_horn", "牛角", "兽角", "弯角", "角弧", "公牛"],
+    "claw": ["claw", "爪片", "利爪", "豹爪", "豹", "黑豹", "猛兽"],
+    "fang": ["fang", "獠牙", "尖牙"],
+    "spike": ["spike", "尖刺", "角刺", "星刺", "stud"],
+    "scale": ["scale", "scale_texture", "鳞", "鳞片", "dragon", "龙"],
+    "crest": ["crest", "冠羽", "脊冠"],
+    "flame": ["flame", "火焰", "火苗", "火舌"],
+    "predator": ["predator", "panther", "black panther", "黑豹", "猛兽", "兽感", "猎豹"],
+    "lightning": ["lightning", "electric", "闪电", "电光", "thunderbolt"],
+    "rock_glam": ["rock", "glam", "glamorous", "摇滚", "叛逆", "甜辣", "华丽", "edgy"],
+    "combat": ["battle", "battles", "free fire", "boxing_glove", "fighter", "竞技", "拳击", "拳套", "战队", "pk"],
+    "luxury": ["luxury", "luxury_collectible", "奢闪", "轻奢", "收藏级", "金箔"],
+}
+
+_AXIS_SHAPE_TAGS: dict[str, list[str]] = {
+    "feather": ["wing", "bird"],
+    "horn": ["horn", "cow_horn"],
+    "claw": ["claw"],
+    "fang": ["fang"],
+    "spike": ["spike"],
+    "scale": ["scale", "dragon"],
+    "crest": ["crest"],
+    "flame": ["flame"],
+    "predator": ["claw"],
+    "lightning": ["electric", "lightning"],
+    "combat": ["boxing_glove"],
+}
+
+_AXIS_VIBE_TAGS: dict[str, list[str]] = {
+    "predator": ["wild", "bold"],
+    "rock_glam": ["edgy", "glamorous", "bold"],
+    "combat": ["battle", "bold"],
+    "luxury": ["luxury_collectible", "glamorous"],
+}
+
+_STRUCTURAL_CREATIVE_AXES = {
+    "horn",
+    "claw",
+    "fang",
+    "feather",
+    "flame",
+    "spike",
+    "scale",
+    "crest",
+    "predator",
+    "lightning",
+}
+
+_NON_MATERIAL_TAGS = {
+    "bold",
+    "claw",
+    "cute",
+    "dreamy",
+    "dragon",
+    "edgy",
+    "electric",
+    "fang",
+    "glam",
+    "glamorous",
+    "hat",
+    "horn",
+    "idol_energy",
+    "idol_support",
+    "lightning",
+    "mascot",
+    "melon",
+    "potato",
+    "romantic",
+    "scale",
+    "spike",
+    "star",
+    "sweet",
+    "sweet_cool",
+    "wild",
 }
 
 
@@ -188,6 +326,10 @@ class HostBrief(BaseModel):
     # uses these values to override router defaults so every slot is concrete.
     vision: HostVisionBrief | None = None
 
+    # Controlled creative divergence. Baseline remains stable; expressive/wild
+    # is opt-in via upstream fields or deterministic inference.
+    creative_profile: CreativeProfile = Field(default_factory=CreativeProfile)
+
     def to_routing_context(self, intent: "RetrievalIntent | None" = None) -> dict[str, Any]:
         """Adapt to the legacy {host, derived} dict consumed by current routers.
 
@@ -248,11 +390,16 @@ def build_host_brief(host: HostInput, vision: HostVisionBrief | None = None) -> 
     shape_tokens = _split(" ".join(symbols_raw)) + _split(host.body_form) + _split(host.content_type)
     color_tokens = _split(all_colors)
     vibe_tokens = _split(host.live_vibe) + _split(host.personality)
+    material_tokens = (
+        _split(" ".join(symbols_raw))
+        + _split(host.material_language_hint)
+        + _split(host.notes)
+    )
 
     shape_tags = _dedupe(shape_tokens + _infer(shape_tokens, _SHAPE_INFERENCE))
     color_tags = _dedupe(color_tokens + _infer(color_tokens, _COLOR_INFERENCE))
     vibe_tags = _dedupe(vibe_tokens + _infer(vibe_tokens, _VIBE_INFERENCE))
-    material_tags: list[str] = []
+    material_tags = _dedupe(_infer(material_tokens, _MATERIAL_INFERENCE))
 
     primary_color = host.primary_color
     secondary_color = host.secondary_color
@@ -271,9 +418,33 @@ def build_host_brief(host: HostInput, vision: HostVisionBrief | None = None) -> 
         if vision.palette.tags:
             color_tags = _dedupe(color_tags + list(vision.palette.tags))
         if vision.materials.tags:
-            material_tags = _dedupe(material_tags + list(vision.materials.tags))
+            material_tags = _dedupe(material_tags + _material_only_tags(list(vision.materials.tags)))
+        vision_material_tokens = _split(
+            " ".join(
+                [
+                    vision.materials.main,
+                    vision.materials.supporting,
+                    vision.style_pitch,
+                    vision.lamp_head_silhouette,
+                    _theme_forms_text(vision),
+                ]
+            )
+        )
+        if vision_material_tokens:
+            material_tags = _dedupe(material_tags + _infer(vision_material_tokens, _MATERIAL_INFERENCE))
         if vision.mood.tags:
             vibe_tags = _dedupe(vibe_tags + list(vision.mood.tags))
+        vision_vibe_tokens = _split(
+            " ".join(
+                [
+                    vision.mood.phrase,
+                    vision.style_pitch,
+                    vision.silhouette_language,
+                ]
+            )
+        )
+        if vision_vibe_tokens:
+            vibe_tags = _dedupe(vibe_tags + _infer(vision_vibe_tokens, _VIBE_INFERENCE))
         if vision.signature_symbols.primary or vision.signature_symbols.secondary:
             sym_tokens = _split(
                 " ".join(
@@ -284,6 +455,17 @@ def build_host_brief(host: HostInput, vision: HostVisionBrief | None = None) -> 
                 )
             )
             shape_tags = _dedupe(shape_tags + sym_tokens + _infer(sym_tokens, _SHAPE_INFERENCE))
+        vision_shape_tokens = _split(
+            " ".join(
+                [
+                    vision.lamp_head_silhouette,
+                    vision.silhouette_language,
+                    _theme_forms_text(vision),
+                ]
+            )
+        )
+        if vision_shape_tokens:
+            shape_tags = _dedupe(shape_tags + _infer(vision_shape_tokens, _SHAPE_INFERENCE))
         if vision.palette.main_color or vision.palette.secondary_color:
             all_colors = " ".join(
                 part
@@ -294,6 +476,16 @@ def build_host_brief(host: HostInput, vision: HostVisionBrief | None = None) -> 
                 ]
                 if part
             ).strip()
+
+    creative_profile = _derive_creative_profile(
+        host,
+        shape_tags=shape_tags,
+        vibe_tags=vibe_tags,
+        vision=vision,
+    )
+    if creative_profile.intensity > 0:
+        shape_tags = _dedupe(shape_tags + _shape_tags_from_axes(creative_profile.axes))
+        vibe_tags = _dedupe(vibe_tags + _vibe_tags_from_profile(creative_profile))
 
     script_kind, has_emoji, char_count, text_tags = _analyze_text(host.host_name)
     if vision is not None and vision.text.script:
@@ -328,6 +520,7 @@ def build_host_brief(host: HostInput, vision: HostVisionBrief | None = None) -> 
         has_emoji=has_emoji,
         char_count=char_count,
         vision=vision,
+        creative_profile=creative_profile,
     )
 
 
@@ -353,7 +546,6 @@ def _unique(values: list[str]) -> list[str]:
 def _first_symbol(value: str) -> str:
     if not value:
         return ""
-    import re
 
     return re.split(r"\s*/\s*|\s+or\s+|\s+\+\s+|[,，、;；]", value, maxsplit=1, flags=re.I)[0].strip()
 
@@ -373,8 +565,6 @@ def _first_non_duplicate(primary: str, values: list[str]) -> str:
 
 
 def _secondary_value(primary: str, value: str) -> str:
-    import re
-
     parts = [
         part.strip()
         for part in re.split(r"\s+or\s+|\s*/\s*|\s+\+\s+|[,，、;；]", value, flags=re.I)
@@ -426,8 +616,263 @@ def _dedupe(values: list[str]) -> list[str]:
 
 
 def _infer(tokens: list[str], table: dict[str, list[str]]) -> list[str]:
-    text = " ".join(tokens)
-    return [tag for tag, hooks in table.items() if any(h.lower() in text for h in hooks)]
+    text = " ".join(tokens).lower()
+    return [tag for tag, hooks in table.items() if any(_hook_matches(text, h) for h in hooks)]
+
+
+def _hook_matches(text: str, hook: str) -> bool:
+    hook_text = hook.lower().strip()
+    if not hook_text:
+        return False
+    if hook_text.isascii() and re.fullmatch(r"[a-z0-9_]+", hook_text):
+        return re.search(rf"(?<![a-z0-9_]){re.escape(hook_text)}(?![a-z0-9_])", text) is not None
+    return hook_text in text
+
+
+def _derive_creative_profile(
+    host: HostInput,
+    *,
+    shape_tags: list[str],
+    vibe_tags: list[str],
+    vision: HostVisionBrief | None,
+) -> CreativeProfile:
+    raw = host.raw if isinstance(host.raw, dict) else {}
+    explicit_mode = _normalize_creative_mode(
+        _first_raw_value(raw, "creative_mode", "creative_profile_mode", "wildness_mode")
+    )
+    explicit_score = _normalize_wildness_score(
+        _first_raw_value(raw, "wildness_score", "wildness_intensity", "creative_intensity")
+    )
+    explicit_axes = _normalize_axes(
+        _first_raw_value(raw, "wildness_axes", "creative_axes", "creative_tags")
+    )
+
+    source_text_parts = [
+        " ".join(shape_tags),
+        " ".join(vibe_tags),
+        host.content_type,
+        host.live_vibe,
+        host.personality,
+        host.notes,
+        str(raw.get("characterization", "")),
+        " ".join(str(v) for v in raw.get("primary_signals", []) or []),
+        " ".join(str(v) for v in raw.get("host_symbols", []) or []),
+        " ".join(str(v) for v in raw.get("comm_symbols", []) or []),
+    ]
+    if vision is not None:
+        forms = vision.theme_forms
+        source_text_parts.extend(
+            [
+                vision.style_pitch,
+                vision.lamp_head_silhouette,
+                vision.silhouette_language,
+                " ".join(vision.mood.tags),
+                forms.primary.symbol,
+                " ".join(forms.primary.forms),
+                forms.secondary.symbol,
+                " ".join(forms.secondary.forms),
+            ]
+        )
+
+    derived_axes = _infer_creative_axes(" ".join(source_text_parts))
+    axes = _dedupe(explicit_axes + derived_axes)
+
+    disabled = _is_falsey(_first_raw_value(raw, "wildness_enabled", "creative_enabled"))
+    if disabled or explicit_mode == "baseline":
+        return CreativeProfile(
+            mode="baseline",
+            intensity=0,
+            axes=axes,
+            source="explicit" if explicit_mode or disabled else "baseline",
+            notes="wildness disabled by upstream data",
+        )
+
+    if explicit_score is not None:
+        intensity = explicit_score
+        source = "explicit"
+    else:
+        intensity = _infer_creative_intensity(axes, vibe_tags)
+        source = "derived" if intensity > 0 else "baseline"
+
+    if explicit_mode == "wild":
+        intensity = max(intensity, 3)
+    elif explicit_mode == "expressive":
+        intensity = max(intensity, 1)
+
+    intensity = max(0, min(3, intensity))
+    if intensity <= 0:
+        mode = "baseline"
+        source = "baseline" if not explicit_axes else "explicit"
+    elif explicit_mode in {"expressive", "wild"}:
+        mode = explicit_mode
+    elif intensity >= 3:
+        mode = "wild"
+    else:
+        mode = "expressive"
+
+    notes = (
+        "explicit upstream creative controls"
+        if source == "explicit"
+        else "derived from temperament/form/gesture signals"
+        if source == "derived"
+        else "no creative divergence signal"
+    )
+    return CreativeProfile(mode=mode, intensity=intensity, axes=axes, source=source, notes=notes)
+
+
+def _first_raw_value(raw: dict[str, Any], *keys: str) -> Any:
+    for key in keys:
+        if key in raw and not _is_empty_raw_value(raw[key]):
+            return raw[key]
+    return ""
+
+
+def _normalize_creative_mode(value: Any) -> str:
+    text = str(value or "").strip().lower()
+    aliases = {
+        "base": "baseline",
+        "safe": "baseline",
+        "stable": "baseline",
+        "normal": "baseline",
+        "exp": "expressive",
+        "creative": "expressive",
+        "bold": "wild",
+        "feral": "wild",
+    }
+    text = aliases.get(text, text)
+    return text if text in {"baseline", "expressive", "wild"} else ""
+
+
+def _normalize_wildness_score(value: Any) -> int | None:
+    if _is_empty_raw_value(value):
+        return None
+    if isinstance(value, str):
+        label = value.strip().lower()
+        label_map = {
+            "none": 0,
+            "off": 0,
+            "low": 1,
+            "medium": 2,
+            "mid": 2,
+            "high": 3,
+            "wild": 3,
+        }
+        if label in label_map:
+            return label_map[label]
+        try:
+            numeric = float(label)
+        except ValueError:
+            return None
+    else:
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            return None
+    if numeric <= 3:
+        return round(numeric)
+    if numeric <= 10:
+        return round(numeric / 10 * 3)
+    return round(min(numeric, 100) / 100 * 3)
+
+
+def _normalize_axes(value: Any) -> list[str]:
+    if _is_empty_raw_value(value):
+        return []
+    if isinstance(value, str):
+        raw_values = [
+            part.strip()
+            for part in value.replace("、", ",").replace("，", ",").replace("/", ",").split(",")
+        ]
+    elif isinstance(value, (list, tuple, set)):
+        raw_values = [str(part).strip() for part in value]
+    else:
+        raw_values = [str(value).strip()]
+    aliases = {
+        "wings": "feather",
+        "wing": "feather",
+        "swept_wing": "feather",
+        "bird": "feather",
+        "cow_horn": "horn",
+        "panther": "predator",
+        "black_panther": "predator",
+        "glam": "rock_glam",
+        "edgy": "rock_glam",
+        "battle": "combat",
+        "fighter": "combat",
+    }
+    out: list[str] = []
+    for raw in raw_values:
+        key = raw.lower().replace(" ", "_").replace("-", "_")
+        key = aliases.get(key, key)
+        if key in _CREATIVE_AXIS_INFERENCE:
+            out.append(key)
+    return _dedupe(out)
+
+
+def _infer_creative_axes(text: str) -> list[str]:
+    lower = text.lower()
+    return [
+        axis
+        for axis, hooks in _CREATIVE_AXIS_INFERENCE.items()
+        if any(_hook_matches(lower, hook) for hook in hooks)
+    ]
+
+
+def _infer_creative_intensity(axes: list[str], vibe_tags: list[str]) -> int:
+    if not axes:
+        return 0
+    structural_hits = len([axis for axis in axes if axis in _STRUCTURAL_CREATIVE_AXES])
+    expressive_vibe = bool({"wild", "edgy", "glamorous", "bold"} & set(vibe_tags))
+    if structural_hits >= 2 and expressive_vibe:
+        return 3
+    if structural_hits >= 2:
+        return 2
+    if structural_hits:
+        return 1
+    return 0
+
+
+def _is_falsey(value: Any) -> bool:
+    return str(value or "").strip().lower() in {"0", "false", "no", "off", "disabled"}
+
+
+def _is_empty_raw_value(value: Any) -> bool:
+    return value is None or (isinstance(value, str) and value == "")
+
+
+def _shape_tags_from_axes(axes: list[str]) -> list[str]:
+    return _dedupe([tag for axis in axes for tag in _AXIS_SHAPE_TAGS.get(axis, [])])
+
+
+def _vibe_tags_from_profile(profile: CreativeProfile) -> list[str]:
+    tags = [tag for axis in profile.axes for tag in _AXIS_VIBE_TAGS.get(axis, [])]
+    if profile.intensity >= 2:
+        tags.append("bold")
+    if profile.mode == "wild":
+        tags.append("wild")
+    return _dedupe(tags)
+
+
+def _material_only_tags(tags: list[str]) -> list[str]:
+    return [
+        str(tag).strip()
+        for tag in tags
+        if str(tag).strip() and str(tag).strip().lower() not in _NON_MATERIAL_TAGS
+    ]
+
+
+def _theme_forms_text(vision: HostVisionBrief) -> str:
+    forms = vision.theme_forms
+    values = [
+        forms.primary.symbol,
+        forms.primary.position,
+        *forms.primary.forms,
+        forms.secondary.symbol,
+        forms.secondary.position,
+        *forms.secondary.forms,
+        forms.fusion_note,
+    ]
+    return " ".join(value for value in values if value)
 
 
 def _analyze_text(host_name: str) -> tuple[str, bool, int, list[str]]:

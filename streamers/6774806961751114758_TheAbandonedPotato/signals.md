@@ -26,10 +26,6 @@
 ## Characterization
 The host, known as TheAbandonedPotato or 'Mr. P', is a VTuber who uses an animated potato avatar to run a highly interactive quiz show called 'The Big Potato Quiz'. The stream has a strong, quirky brand identity centered entirely around potatoes, with visuals that mimic a neon-lit game show, often adapted for festive themes like Christmas. The vibe is fun, energetic, and deeply communal, resembling a British pub quiz, with a highly engaged audience participating in unique rituals like the 'Potatospin' chant. The host's potato persona is a constant, often adorned with different hats and props that add to the playful and lighthearted atmosphere.
 
-## 500-coin object recommendation
-- **object**: `light_stick`
-- **reason**: The creator's energetic, game-show format and the 'Potatospin' community chant align perfectly with the rally/hype energy of a light stick, which can use the iconic potato avatar as a 3D topper.
-
 ## Media
 - avatar: `avatar.jpg` (token `ZeRhbnKGBocGAaxMbcLlff8wgoh`)
 - stickers: `stickers.jpg` (token `Bn3pbtQ6IofwmoxP55XlBLrzgje`)

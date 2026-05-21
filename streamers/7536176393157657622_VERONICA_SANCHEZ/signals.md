@@ -21,10 +21,6 @@
 ## Characterization
 No high-scoring community/creator stickers in bundle.
 
-## 500-coin object recommendation
-- **object**: `light_sign`
-- **reason**: light_sign fits belonging/aesthetic/talk-show/cozy support AND benefits from community_named_identity / catchphrase / typographic_treatment slots.
-
 ## Media
 - avatar: `avatar.jpg` (token `XSwFbTtrVoUt2HxCHUGlNTM3gNg`)
 - stickers: (none — no high-scoring community/creator stickers in bundle)

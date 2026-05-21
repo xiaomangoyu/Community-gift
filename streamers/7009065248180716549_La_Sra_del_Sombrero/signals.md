@@ -24,10 +24,6 @@
 ## Characterization
 This anchor, known as 'La Sra. del Sombrero' (The Lady of the Hat), is an energetic and competitive Spanish-speaking streamer focused on TikTok battles and platform events. Her visual brand is defined by her signature fedora-style hat, which she wears in every stream, often complemented by bright pink lipstick and a distinctive shiny silver background. While highly strategic during competitions, she fosters a warm and close-knit community vibe, interacting playfully with her fans. Her community, known as 'MV', is highly organized and shows their affiliation by using hat (👒) and rooster (🐓) emojis in their usernames and referring to the anchor affectionately as 'Patrona' (boss lady).
 
-## 500-coin object recommendation
-- **object**: `light_stick`
-- **reason**: light_stick fits the creator's competitive battle energy, and the powerful rooster mascot from sticker_933286146102 provides an exceptional hero element for the topper.
-
 ## Media
 - avatar: `avatar.jpg` (token `DSVJbndLSoGDpKxQtM5lMRzTgyb`)
 - stickers: `stickers.jpg` (token `ZLXtbDCpcovJzNxSdeele5Vrgjf`)

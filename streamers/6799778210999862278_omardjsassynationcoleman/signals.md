@@ -24,10 +24,6 @@
 ## Characterization
 The anchor, DJ Sassy, hosts a music show from his home studio, creating a 'ghetto vibes radio station' atmosphere. His content is a mix of DJing, singing, and warm interaction with his community, often speaking in English and Jamaican Patois. The visual identity is strong, with a prominent '1SASSYNATION' banner and Jamaican flags defining his space. The overall vibe is positive, spiritual, and deeply community-focused, making his stream feel like a personal broadcast for his loyal 'Nation'.
 
-## 500-coin object recommendation
-- **object**: `light_stick`
-- **reason**: light_stick fits the creator's 'radio station' concert/rally energy, and the brand is rich with visual hero elements like the globe icon and DJ mascot.
-
 ## Media
 - avatar: `avatar.jpg` (token `D7hDbWliIo8p81x3Qtkl2njSgue`)
 - stickers: `stickers.jpg` (token `BndMbdCaYoYGZzxVEAhlmZ40gCg`)

@@ -20,10 +20,6 @@
 ## Characterization
 This anchor hosts a casual, multilingual 'Just Chatting' stream in Korean and Japanese from her cozy room. Her vibe is relaxed, cute, and highly interactive, creating an intimate atmosphere where she feels like a friend to her viewers. She frequently engages with fan comments while eating snacks, studying Japanese from a notebook, or simply chatting. Her visual style is clean and 'kawaii', often featuring a pink microphone and frequent outfit changes between various soft sweaters and tracksuits, reinforcing her friendly and approachable personality.
 
-## 500-coin object recommendation
-- **object**: `light_stick`
-- **reason**: light_stick fits rally/hype/battle/coordinated cheer energy AND benefits from a strong visual_hero slot.
-
 ## Media
 - avatar: `avatar.jpg` (token `PDY0bz4uToIWq4xhYTNl3MrFgkb`)
 - stickers: `stickers.jpg` (token `RMlSbDtaBoX6euxtsYzlcR80gEf`)

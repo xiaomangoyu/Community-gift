@@ -20,6 +20,7 @@ from ..models import GiftDesign, HostInput, ImageEvaluation
 
 VISION_BRIEF_WRITING_TEMPLATE = """你不是最终 prompt 作者,而是视觉感知与槽位提取器。
 只把主播素材转成可执行的 lightstick 结构槽位,不要写完整生图 prompt,不要写设计散文。
+你也不负责决定是否开启野性模式或创意强度;只记录低层视觉事实,后续 deterministic mapper 会决定 baseline / expressive / wild。
 
 字段写法:
 1. style_pitch: 8-18 个中文字符的短标签,例如 "粉紫蝶翼梦幻风" / "暖棕圆润玩具风" / "电蓝王冠街头风"。
@@ -35,6 +36,13 @@ VISION_BRIEF_WRITING_TEMPLATE = """你不是最终 prompt 作者,而是视觉感
 8. handle 五个字段: 写成短产品槽位,描述握柄材质、表面、连接、底盖、主题延续;不要写否定句。
 9. mood.phrase: 4-6 个短气质词,用顿号分隔;不要写长句。
 10. fusion_note: 默认留空;只有两个物象必须解释如何融合时,写 20 字以内结构说明。
+11. 野性/锋利/兽感只作为可见事实落槽,不能写成创意方向判断。看到或读到 horn/牛角/兽角/爪/獠牙/尖刺/鳞片/毛发/长毛/鬃毛/羽毛时,
+    必须把它们落到 theme_forms、materials.tags 或 silhouette_language:
+    - 轮廓野性: 上扬角弧、外挑角尖、爪片护翼、尖晶节点、鳞片浅浮雕。
+    - 触感野性: 真实毛发纤维、蓬松长毛边缘、羽片层次、鳞片纹理。
+    - shape tags 用 star / horn / cow_horn / claw / fang / spike / scale / fur / hair。
+    - materials.tags 只写 tactile/material tags,如 fiber_hair / fur / feather / scale_texture / leather_wrap / mirror_metal。
+    - mood.tags 再写 edgy / wild / bold / glamorous。
 """
 
 
@@ -99,6 +107,7 @@ class ModelHubGiftClient:
             "  - palette.family 例:甜冷糖果系 / 烟灰冷调 / 暖橙海岛系 / 紫色梦幻系\n"
             "  - materials.main 例:高光半透明果冻树脂 / 珠光奶油釉面塑胶 / 镜面珐琅\n"
             "  - theme_forms.primary.forms 例:[\"双果鼓包\",\"果冻球体\",\"果梗线\",\"叶片状小护片\"]\n"
+            "  - 野性 forms 例:[\"上扬角弧\",\"外挑角尖\",\"毛流边缘\",\"爪片护翼\",\"鳞片浮雕\"]\n"
             "  - lamp_head_silhouette 例:**优先有机/圆润/吹塑感**形状:椭圆果实双叶护片 / "
             "心形包裹双侧蝶翼 / 拱顶马铃薯块状 / 软糖球体融合双翼 / 蛋形包裹流线护片 / "
             "葫芦双联泡 / 水滴拉长拱冠;只在主播明确是 military/award/medal/badge/heraldic 才用"
@@ -133,7 +142,11 @@ class ModelHubGiftClient:
             "材质/连接件/底盖必须延续主题色与材质语言。\n"
             "9. 所有字段必须短、结构化、可被 template 直接拼接;不要输出完整 prompt 句式,不要写营销文案。"
             "禁止词:招牌、标题、标识、铭牌、牌匾、logo、wordmark、社群凝聚、守护感、记忆延展、圣物。\n"
-            "10. **材质必须有显著差异性**。从下列 8 个材质家族里挑一个作为**主导家族**,"
+            "10. **野性事实必须产品化落槽**。如果视觉或 signals 含野性/野感/锋利/张扬/牛角/兽角/爪/牙/尖刺/鳞片/毛发/长毛/鬃毛/羽毛,"
+            "不能只写 mood.tags。必须至少满足两项:signature_symbols 包含具体物象;theme_forms 写结构件;"
+            "materials.tags 写 tactile tag(fiber_hair/fur/hair/feather/scale_texture/leather_wrap 等);"
+            "silhouette_language 写上扬/外扩/前探/尖润/张力。若看到真实长毛或毛发,不要改写成皮革,materials 必须包含真实毛发纤维或蓬松长毛纤维。\n"
+            "11. **材质必须有显著差异性**。从下列 8 个材质家族里挑一个作为**主导家族**,"
             "辅助材质必须来自**另一个不同家族**形成对比。不允许两项都属同一家族:\n"
             "   A. 树脂家族 — 高光半透明果冻树脂、珠光釉面塑胶、糖果硬树脂\n"
             "   B. 金属家族 — 拉丝铝、阳极氧化枪灰、镜面铬、做旧黄铜、玫瑰金\n"
@@ -149,7 +162,7 @@ class ModelHubGiftClient:
             "   - 其次从 characterization 中的内容形态(只有真正的 KO/PUBG/Free Fire/PK 才算 military)\n"
             "   - 文化暗示(异域/沙漠 → 黄铜 + 沙岩;海岛 → 玻璃 + 贝母;都市夜店 → 喷漆 + 玻璃;市井日常 → 陶 + 木)\n"
             "主辅之间必须有视觉对比:光泽 vs 磨砂、硬 vs 软、冷 vs 暖、反射 vs 吸光。\n"
-            "11. 只输出 JSON object,不要 markdown,不要解释文字。"
+            "12. 只输出 JSON object,不要 markdown,不要解释文字。"
         )
         payload = {
             "row_id": host.row_id,
@@ -179,7 +192,7 @@ class ModelHubGiftClient:
             "materials": {
                 "main": "Chinese material",
                 "supporting": "Chinese material",
-                "tags": ["english_lower_underscore"],
+                "tags": ["translucent_jelly", "fiber_hair"],
             },
             "signature_symbols": {
                 "primary": "concrete visual object",

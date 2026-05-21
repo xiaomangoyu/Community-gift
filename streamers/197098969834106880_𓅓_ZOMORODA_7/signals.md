@@ -24,10 +24,6 @@
 ## Characterization
 The anchor, Zomoroda, is a female DJ who hosts high-energy live music streams, primarily for an Arabic-speaking audience. Her content has a virtual nightclub aesthetic, utilizing a green screen with dynamic, neon-lit backgrounds that often feature her branded name 'ZOMORODA 7' or 'ZOMORODA777'. She performs as a DJ, singing and dancing along to the music, creating a celebratory and interactive party atmosphere. Her signature look often includes a headset and sunglasses, reinforcing her cool, modern DJ persona.
 
-## 500-coin object recommendation
-- **object**: `light_stick`
-- **reason**: The creator's high-energy DJ party streams align with the rally/hype energy of a light stick, and the strong owl mascot provides a perfect hero element for the topper.
-
 ## Media
 - avatar: `avatar.jpg` (token `RiO3bJSizooNEJxhjXXlqZx0gmh`)
 - stickers: `stickers.jpg` (token `IPMMb8cOdo4EQCx6wo9lLcekgNg`)

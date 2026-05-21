@@ -102,7 +102,7 @@ class ReferenceRouter:
             )
             scored.append((score, matched, entry))
 
-        scored.sort(key=lambda item: (-item[0], item[2]["id"]))
+        scored.sort(key=_score_sort_key)
 
         picks: list[ReferencePick] = []
         fallback_used = False
@@ -239,6 +239,17 @@ def _score(entry: dict[str, Any], host_signals: dict[str, list[str]]) -> tuple[f
         return 0.0, matched
     quality_bonus = STRONG_QUALITY_BONUS if str(entry.get("quality", "")).lower() == "strong" else 0.0
     return semantic_score + quality_bonus, matched
+
+
+def _score_sort_key(item: tuple[float, dict[str, list[str]], dict[str, Any]]) -> tuple[float, int, int, int, str]:
+    score, matched, entry = item
+    # When scores tie, prefer references that matched concrete shape anchors.
+    # Text/color/vibe ties are common; shape tie-breaking keeps the reference
+    # closer to the host's primary object instead of drifting to a mood match.
+    shape_hits = len(matched.get("shape") or [])
+    material_hits = len(matched.get("material") or [])
+    dimension_hits = len(matched)
+    return (-score, -shape_hits, -material_hits, -dimension_hits, str(entry.get("id", "")))
 
 
 def _is_weak_text_only_match(matched: dict[str, list[str]]) -> bool:

@@ -229,7 +229,7 @@ def _is_emoji(char: str) -> bool:
 # ---------------------------------------------------------------------------
 
 # Bump when schema changes such that older cached briefs would miss fields.
-VISION_SCHEMA_VERSION = 9
+VISION_SCHEMA_VERSION = 12
 
 # Default cache directory — outside source data, can be wiped without risk.
 _DEFAULT_CACHE_DIR = Path("outputs/vision_cache")

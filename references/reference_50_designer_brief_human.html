@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>50 张 Reference 设计交接表</title>
+<style>
+  :root { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #111827; }
+  body { margin: 32px; background: #f8fafc; }
+  h1 { margin: 0 0 8px; font-size: 28px; }
+  h2 { margin: 34px 0 12px; font-size: 20px; }
+  .subtitle { color: #4b5563; margin-bottom: 18px; max-width: 1080px; line-height: 1.6; }
+  .rules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; max-width: 1200px; margin: 18px 0 28px; }
+  .rule { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 14px; line-height: 1.45; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+  table { width: 100%; border-collapse: separate; border-spacing: 0; background: white; box-shadow: 0 1px 4px rgba(15,23,42,.08); border-radius: 12px; overflow: hidden; table-layout: fixed; }
+  th { position: sticky; top: 0; background: #1f4e78; color: white; text-align: left; font-weight: 700; font-size: 13px; padding: 10px; border-right: 1px solid rgba(255,255,255,.18); }
+  td { vertical-align: top; padding: 10px; border-top: 1px solid #e5e7eb; border-right: 1px solid #f1f5f9; line-height: 1.45; font-size: 13px; word-break: break-word; }
+  tr:hover td { background-color: #f8fafc; }
+  .num { width: 42px; text-align: center; font-weight: 700; }
+  .prio { width: 74px; color: white; text-align: center; font-weight: 700; border-radius: 999px; display: inline-block; padding: 3px 8px; }
+  .category { font-weight: 700; border-radius: 8px; padding: 6px 8px; display: inline-block; }
+  .type { font-weight: 700; font-size: 14px; }
+  .text { font-size: 16px; font-weight: 700; }
+  .tags { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #374151; font-size: 12px; }
+  .batch-note { color: #6b7280; margin: 0 0 10px; }
+  @media print { body { margin: 12px; background: white; } .rules { grid-template-columns: 1fr; } th { position: static; } }
+</style>
+</head>
+<body>
+<h1>50 张 Reference 设计交接表</h1>
+<p class="subtitle">目标是制作 50 张可复用的应援棒视觉母型。每张图都要覆盖一个真实主播/场景缺口，并且后续可以通过 tags 进入 reference manifest。</p>
+<div class="rules">
+  <div class="rule">黑色棚拍背景，1:1 正方形，固定 45 度朝右产品视角。</div>
+  <div class="rule">完整展示整支打 call 棒：灯头、连接处、握柄、底盖都要清楚。</div>
+  <div class="rule">文字只在灯头中央核心出现，不能做外接文字牌或海报。</div>
+  <div class="rule">灯头是视觉重心，但手柄和底盖也要延续主题。</div>
+  <div class="rule">不是元素贴图，要像一体成型的收藏级实体产品。</div>
+  <div class="rule">外扩装饰可以丰富，但不能遮挡中央文字。</div>
+</div>
+
+<h2>第一批最优先</h2>
+<p class="batch-note">当前最建议先做，优先补真实数据缺口。</p>
+<table>
+<thead><tr><th style="width:44px">#</th><th style="width:76px">优先级</th><th style="width:128px">大类</th><th style="width:170px">Reference 类型</th><th style="width:92px">测试文字</th><th>设计重点</th><th>色彩 / 材质</th><th>覆盖场景</th><th>入库 tags</th></tr></thead><tbody>
+<tr>
+<td class="num">1</td>
+<td><span class="prio" style="background:#f97316">P0</span></td>
+<td><span class="category" style="background:#dbeafe">鸟翼 / 鹰隼</span></td>
+<td class="type">黑紫电光乌鸦羽翼</td>
+<td class="text">TrLinda</td>
+<td>乌鸦头部、黑紫展翼、闪电核心，整体冷冽但仍是圆润收藏品</td>
+<td>黑紫、冷白、电蓝；透明玻璃、黑色羽片、少量电光线</td>
+<td>Linda、乌鸦、闪电、battle</td>
+<td class="tags">crow, raven, wing, lightning, dark, electric</td>
+</tr>
+<tr>
+<td class="num">2</td>
+<td><span class="prio" style="background:#f97316">P0</span></td>
+<td><span class="category" style="background:#dbeafe">鸟翼 / 鹰隼</span></td>
+<td class="type">银黑展翼鹰徽章</td>
+<td class="text">Zahira</td>
+<td>展翼鹰徽章，灯头像金属队徽，中心文字清楚</td>
+<td>银黑、冷金；拉丝金属、黑曜玻璃、徽章浮雕</td>
+<td>Zahira、鹰、team、battle</td>
+<td class="tags">eagle, wing, badge, silver_black, battle</td>
+</tr>
+<tr>
+<td class="num">3</td>
+<td><span class="prio" style="background:#f97316">P0</span></td>
+<td><span class="category" style="background:#dbeafe">鸟翼 / 鹰隼</span></td>
+<td class="type">阿拉伯猎鹰古金绿</td>
+<td class="text">موكة</td>
+<td>猎鹰侧翼、棕榈叶、古金绿色徽章，带中东贵气</td>
+<td>古金、祖母绿、深棕；黄铜、绿宝石、砂岩纹理</td>
+<td>阿拉伯猎鹰、棕榈、强身份主播</td>
+<td class="tags">falcon, palm, arabic, antique_gold, green</td>
+</tr>
+<tr>
+<td class="num">4</td>
+<td><span class="prio" style="background:#f97316">P0</span></td>
+<td><span class="category" style="background:#ede9fe">黑金动物</span></td>
+<td class="type">黑豹金箔奢华</td>
+<td class="text">MelNav</td>
+<td>黑豹爪或豹头轮廓，爪片护翼，野性但不恐怖</td>
+<td>黑曜、金箔、琥珀、烟棕；丝绒、镜面金属、黑色玻璃</td>
+<td>Melissa、黑豹、黑金奢华、野性</td>
+<td class="tags">panther, claw, gold_foil, obsidian, velvet, luxury</td>
+</tr>
+<tr>
+<td class="num">5</td>
+<td><span class="prio" style="background:#f97316">P0</span></td>
+<td><span class="category" style="background:#fef3c7">帽子 / 人设</span></td>
+<td class="type">宽檐礼帽公鸡</td>
+<td class="text">SraHat</td>
+<td>宽檐帽做灯头主体，公鸡冠羽只做上方轮廓点</td>
+<td>红、银、黑；漆面帽檐、金属冠羽、复古玻璃</td>
+<td>Sombrero、礼帽、公鸡、复古人设</td>
+<td class="tags">wide_hat, sombrero, rooster, crest, retro</td>
+</tr>
+<tr>
+<td class="num">6</td>
+<td><span class="prio" style="background:#f97316">P0</span></td>
+<td><span class="category" style="background:#fef3c7">帽子 / 人设</span></td>
+<td class="type">牛仔帽复古麦克风</td>
+<td class="text">Gokin</td>
+<td>卷檐牛仔帽和老麦克风融合，像海岛驻唱礼物</td>
+<td>珊瑚橙、海军蓝、奶油白；皮革、旧铜、麦克风金属网</td>
+<td>Thai 主播、牛仔帽、驻唱、海岛音乐</td>
+<td class="tags">cowboy_hat, microphone, island, retro_music</td>
+</tr>
+<tr>
+<td class="num">7</td>
+<td><span class="prio" style="background:#f97316">P0</span></td>
+<td><span class="category" style="background:#fef3c7">帽子 / 人设</span></td>
+<td class="type">猫耳酒红粉</td>
+<td class="text">Chemie</td>
+<td>猫耳拱冠，灯头柔软俏皮，不要变成真实猫头</td>
+<td>酒红、粉、黑、亮白；果冻树脂、亮面烤漆、柔软耳边</td>
+<td>Chemie、猫耳、夜聊、玩闹</td>
+<td class="tags">cat_ear, y2k, jelly_resin, playful, burgundy</td>
+</tr>
+<tr>
+<td class="num">8</td>
+<td><span class="prio" style="background:#f97316">P0</span></td>
+<td><span class="category" style="background:#dcfce7">音乐 / 夜场</span></td>
+<td class="type">复古麦克风紫红夜场</td>
+<td class="text">Genbro</td>
+<td>复古麦克风作为灯头主体，外圈有声波环</td>
+<td>紫红、深蓝、银；金属麦网、霓虹管、玻璃核心</td>
+<td>音乐直播、rapper、GENBRO、Sunny</td>
+<td class="tags">microphone, soundwave, nightclub, purple_red</td>
+</tr>
+<tr>
+<td class="num">9</td>
+<td><span class="prio" style="background:#f97316">P0</span></td>
+<td><span class="category" style="background:#dcfce7">音乐 / 夜场</span></td>
+<td class="type">DJ Headset 祖母绿夜店</td>
+<td class="text">Sassy</td>
+<td>耳机环绕灯头，中心像夜店舞台光核</td>
+<td>祖母绿、紫、黑、冷白；透明亚克力、金属耳机环</td>
+<td>DJ、夜店、ZOMORODA、Sassy</td>
+<td class="tags">dj, headphone, emerald, nightclub, club</td>
+</tr>
+<tr>
+<td class="num">10</td>
+<td><span class="prio" style="background:#f97316">P0</span></td>
+<td><span class="category" style="background:#ffedd5">Mascot / 食物</span></td>
+<td class="type">熊猫耳机蓝白 Fighter</td>
+<td class="text">KakMaa</td>
+<td>熊猫圆耳和耳机合体，轻战队感，不要太幼稚</td>
+<td>蓝白、黑、银；软胶、半透玻璃、耳机金属</td>
+<td>Kak Maa、熊猫、耳机、fighter</td>
+<td class="tags">panda, headphone, fighter, team, blue_white</td>
+</tr>
+<tr>
+<td class="num">11</td>
+<td><span class="prio" style="background:#f97316">P0</span></td>
+<td><span class="category" style="background:#cffafe">徽章 / 战队</span></td>
+<td class="type">警徽电蓝玫紫</td>
+<td class="text">LtJohn</td>
+<td>警徽盾牌灯头，警灯光冠，文字在徽章中心</td>
+<td>电蓝、玫紫、银黑；镜面金属、警灯玻璃</td>
+<td>Lieutenant John、警徽、秩序、badge</td>
+<td class="tags">police_badge, shield, siren, blue_pink</td>
+</tr>
+<tr>
+<td class="num">12</td>
+<td><span class="prio" style="background:#f97316">P0</span></td>
+<td><span class="category" style="background:#fae8ff">奢品 / 夜聊</span></td>
+<td class="type">香水瓶金链琥珀黑</td>
+<td class="text">Duffy</td>
+<td>香水瓶灯头，金链作为边缘结构，精致都市感</td>
+<td>琥珀、黑、金；厚玻璃香水瓶、金链、镜面金属</td>
+<td>B.DUFFY、香水、美妆、精致夜聊</td>
+<td class="tags">perfume, chain, amber, black, luxury</td>
+</tr>
+<tr>
+<td class="num">13</td>
+<td><span class="prio" style="background:#f97316">P0</span></td>
+<td><span class="category" style="background:#ecfccb">特殊材质</span></td>
+<td class="type">火山熔岩紫红</td>
+<td class="text">Lava</td>
+<td>黑曜火山岩外壳，熔岩裂纹核心，爆发力强</td>
+<td>黑曜、紫红、熔橙；火山岩、熔岩玻璃、金属裂纹</td>
+<td>keyashley、爆发力、火山、能量感</td>
+<td class="tags">volcano, lava, obsidian, energy, purple_red</td>
+</tr>
+<tr>
+<td class="num">14</td>
+<td><span class="prio" style="background:#f97316">P0</span></td>
+<td><span class="category" style="background:#fee2e2">文字专项</span></td>
+<td class="type">中文 / 繁中浮雕核心</td>
+<td class="text">陽寶</td>
+<td>中文立体浮雕字芯，圆润、清楚，不要伪字</td>
+<td>暖黄、奶白、浅金；透明树脂、柔光字芯</td>
+<td>中文/繁中主播、陽寶、嘎嘎</td>
+<td class="tags">chinese, embossed, rounded_logo, clean_core</td>
+</tr>
+<tr>
+<td class="num">15</td>
+<td><span class="prio" style="background:#f97316">P0</span></td>
+<td><span class="category" style="background:#fee2e2">文字专项</span></td>
+<td class="type">泰文圆润 Logo 核心</td>
+<td class="text">โกคิน</td>
+<td>泰文圆润字芯，短字要清楚，适合海岛/音乐兜底</td>
+<td>珊瑚橙、奶白、海军蓝；果冻树脂、柔光核心</td>
+<td>Thai 主播、โกคิน、海岛音乐</td>
+<td class="tags">thai, rounded_logo, soft_glow</td>
+</tr>
+<tr>
+<td class="num">16</td>
+<td><span class="prio" style="background:#f97316">P0</span></td>
+<td><span class="category" style="background:#fee2e2">文字专项</span></td>
+<td class="type">长 Latin 弧形晶核</td>
+<td class="text">TeamZ</td>
+<td>更宽的核心，适合较长社群名，字沿弧形排布但清晰</td>
+<td>银白、烟紫、透明水晶；宽晶核、细边框</td>
+<td>长 Latin、fan club、无强物象 fallback</td>
+<td class="tags">long_latin, nameplate, clean_core, readable_text</td>
+</tr>
+</tbody></table>
+<h2>第二批补覆盖</h2>
+<p class="batch-note">补足人设、脚本、地域和常见场景。</p>
+<table>
+<thead><tr><th style="width:44px">#</th><th style="width:76px">优先级</th><th style="width:128px">大类</th><th style="width:170px">Reference 类型</th><th style="width:92px">测试文字</th><th>设计重点</th><th>色彩 / 材质</th><th>覆盖场景</th><th>入库 tags</th></tr></thead><tbody>
+<tr>
+<td class="num">17</td>
+<td><span class="prio" style="background:#16a34a">P1</span></td>
+<td><span class="category" style="background:#dbeafe">鸟翼 / 鹰隼</span></td>
+<td class="type">羽翼 DJ 夜场</td>
+<td class="text">Zomo</td>
+<td>羽翼包裹 DJ 耳机，兼顾鸟翼和夜店</td>
+<td>紫、绿、黑、银；羽片、耳机金属、霓虹环</td>
+<td>ZOMORODA、DJ、羽翼、夜场</td>
+<td class="tags">wing, headphone, dj, nightclub, arabic</td>
+</tr>
+<tr>
+<td class="num">18</td>
+<td><span class="prio" style="background:#16a34a">P1</span></td>
+<td><span class="category" style="background:#dbeafe">鸟翼 / 鹰隼</span></td>
+<td class="type">紫白蝴蝶天使翼</td>
+<td class="text">엘린</td>
+<td>蝴蝶翼和天使羽融合，中心韩文字清楚</td>
+<td>紫白、珠光、淡粉；透明树脂、珍珠漆</td>
+<td>엘린장、蝴蝶、天使翼、韩文</td>
+<td class="tags">butterfly, angel_wing, pearl, purple</td>
+</tr>
+<tr>
+<td class="num">19</td>
+<td><span class="prio" style="background:#16a34a">P1</span></td>
+<td><span class="category" style="background:#ede9fe">黑金动物</span></td>
+<td class="type">金棕豹爪丝绒</td>
+<td class="text">Panthera</td>
+<td>豹爪圆核、金属爪片、棕色短绒触感</td>
+<td>金棕、琥珀、黑；丝绒、金属、宝石</td>
+<td>黑金猛兽、爪片、奢华野性</td>
+<td class="tags">claw, panther, velvet, mirror_metal, amber</td>
+</tr>
+<tr>
+<td class="num">20</td>
+<td><span class="prio" style="background:#16a34a">P1</span></td>
+<td><span class="category" style="background:#fef3c7">帽子 / 人设</span></td>
+<td class="type">兜帽云朵冰蓝</td>
+<td class="text">Shiro</td>
+<td>冰蓝兜帽包住云朵核心，清冷软萌</td>
+<td>冰蓝、白、浅紫；磨砂玻璃、云朵软胶</td>
+<td>shiro、云朵、兜帽、日系清冷</td>
+<td class="tags">hood, cloud, icy_blue, soft, japanese</td>
+</tr>
+<tr>
+<td class="num">21</td>
+<td><span class="prio" style="background:#16a34a">P1</span></td>
+<td><span class="category" style="background:#fef3c7">帽子 / 人设</span></td>
+<td class="type">皇冠帽檐街头</td>
+<td class="text">Xoliza</td>
+<td>皇冠拱冠加短帽檐，街头但不杂乱</td>
+<td>电蓝、玫红、白、金；吹制玻璃、软皮包覆</td>
+<td>Rey、皇冠、棒球帽、街头</td>
+<td class="tags">crown, baseball_cap, street, neon_blue, hot_pink</td>
+</tr>
+<tr>
+<td class="num">22</td>
+<td><span class="prio" style="background:#16a34a">P1</span></td>
+<td><span class="category" style="background:#dcfce7">音乐 / 夜场</span></td>
+<td class="type">小太阳猫耳柔光麦克风</td>
+<td class="text">Sunny</td>
+<td>日轮猫耳加小麦克风，温暖唱歌感</td>
+<td>阳光黄、奶白、桃粉；透明果冻、柔光金属</td>
+<td>陽寶 Sunny、太阳、猫、唱歌</td>
+<td class="tags">sun, cat, microphone, warm_light, healing</td>
+</tr>
+<tr>
+<td class="num">23</td>
+<td><span class="prio" style="background:#16a34a">P1</span></td>
+<td><span class="category" style="background:#dcfce7">音乐 / 夜场</span></td>
+<td class="type">海岛麦克风珊瑚蓝</td>
+<td class="text">Phuket</td>
+<td>复古麦克风、棕榈/海浪小细节，海岛驻唱</td>
+<td>珊瑚橙、海军蓝、奶油白；旧铜、贝母、玻璃</td>
+<td>Thai 主播、海岛、驻唱</td>
+<td class="tags">thai, island, microphone, coral, navy</td>
+</tr>
+<tr>
+<td class="num">24</td>
+<td><span class="prio" style="background:#16a34a">P1</span></td>
+<td><span class="category" style="background:#ffedd5">Mascot / 食物</span></td>
+<td class="type">大象灯泡发电厂</td>
+<td class="text">Gaga</td>
+<td>大象双耳包住灯泡电芯，幽默但产品化</td>
+<td>紫、黄、烟灰；半透玻璃、哑光软胶</td>
+<td>嘎嘎、大象、电力、中文社群</td>
+<td class="tags">elephant, big_ear, bulb, electric, chinese</td>
+</tr>
+<tr>
+<td class="num">25</td>
+<td><span class="prio" style="background:#16a34a">P1</span></td>
+<td><span class="category" style="background:#cffafe">徽章 / 战队</span></td>
+<td class="type">战队圆环旗帜黄绿</td>
+<td class="text">Nation</td>
+<td>圆环旗帜和徽章融合，有集结感</td>
+<td>黄绿、黑、白；旗帜浮雕、亚克力灯芯</td>
+<td>Nationteam、team、rally、热带</td>
+<td class="tags">team, flag, ring, yellow_green, rally</td>
+</tr>
+<tr>
+<td class="num">26</td>
+<td><span class="prio" style="background:#16a34a">P1</span></td>
+<td><span class="category" style="background:#cffafe">徽章 / 战队</span></td>
+<td class="type">黑金女王徽章</td>
+<td class="text">Queen</td>
+<td>黑金徽章、小皇冠、宝石核心</td>
+<td>黑、金、红宝石；金属、黑曜石、珐琅</td>
+<td>Queen、女王、皇冠、黑金</td>
+<td class="tags">queen, crown, badge, black_gold, royal</td>
+</tr>
+<tr>
+<td class="num">27</td>
+<td><span class="prio" style="background:#16a34a">P1</span></td>
+<td><span class="category" style="background:#cffafe">徽章 / 战队</span></td>
+<td class="type">月桂胜利奖章</td>
+<td class="text">Victory</td>
+<td>月桂冠包住圆形奖章，荣誉收藏感</td>
+<td>金白、香槟、深蓝；金属、珠光树脂</td>
+<td>award、honor、胜利、荣誉架</td>
+<td class="tags">laurel, medal, victory, award, gold</td>
+</tr>
+<tr>
+<td class="num">28</td>
+<td><span class="prio" style="background:#16a34a">P1</span></td>
+<td><span class="category" style="background:#fae8ff">奢品 / 夜聊</span></td>
+<td class="type">酒杯 Lounge 晶体</td>
+<td class="text">Omar</td>
+<td>酒杯晶体化，不要像真实杯子道具</td>
+<td>酒红、黑、金；切面水晶、镜面金属</td>
+<td>mature、night talk、lounge、都市</td>
+<td class="tags">wine_glass, lounge, burgundy, crystal</td>
+</tr>
+<tr>
+<td class="num">29</td>
+<td><span class="prio" style="background:#16a34a">P1</span></td>
+<td><span class="category" style="background:#fae8ff">奢品 / 夜聊</span></td>
+<td class="type">珠宝链环夜色</td>
+<td class="text">Jewel</td>
+<td>宝石链环作为灯头外圈，精致夜色</td>
+<td>黑金、蓝宝石、冷白；链饰、宝石、玻璃</td>
+<td>链饰、珠宝、夜聊、贵气</td>
+<td class="tags">jewelry, chain, night, luxury</td>
+</tr>
+<tr>
+<td class="num">30</td>
+<td><span class="prio" style="background:#16a34a">P1</span></td>
+<td><span class="category" style="background:#ecfccb">特殊材质</span></td>
+<td class="type">木箱宝藏黄铜</td>
+<td class="text">Andam</td>
+<td>木质宝箱结构转成灯头，黄铜边框</td>
+<td>木棕、黄铜、冰蓝；漆木、旧铜、玻璃核心</td>
+<td>ANDAM、木箱、宝藏、黄铜</td>
+<td class="tags">wood, treasure_chest, brass, aged</td>
+</tr>
+<tr>
+<td class="num">31</td>
+<td><span class="prio" style="background:#16a34a">P1</span></td>
+<td><span class="category" style="background:#ecfccb">特殊材质</span></td>
+<td class="type">冰晶云泡泡</td>
+<td class="text">Cloudy</td>
+<td>冰晶泡泡和云朵边缘，轻盈干净</td>
+<td>冰蓝、白、透明紫；冰晶、气泡玻璃</td>
+<td>云朵、冰蓝、透明材质差异</td>
+<td class="tags">ice_crystal, cloud, bubble, icy_blue</td>
+</tr>
+<tr>
+<td class="num">32</td>
+<td><span class="prio" style="background:#16a34a">P1</span></td>
+<td><span class="category" style="background:#ecfccb">特殊材质</span></td>
+<td class="type">棕榈徽章热带</td>
+<td class="text">Palm</td>
+<td>棕榈叶徽章，热带但仍高级</td>
+<td>绿、暖黄、贝母白；贝母、藤编、玻璃</td>
+<td>海岛、热带、阳光、地域感</td>
+<td class="tags">palm, island, tropical, mother_of_pearl</td>
+</tr>
+<tr>
+<td class="num">33</td>
+<td><span class="prio" style="background:#16a34a">P1</span></td>
+<td><span class="category" style="background:#fee2e2">文字专项</span></td>
+<td class="type">阿拉伯书法心形</td>
+<td class="text">زهرة</td>
+<td>阿拉伯书法清楚嵌入心形核心</td>
+<td>玫瑰金、烟粉、珍珠白；珠光树脂</td>
+<td>Arabic 主播、书法、浪漫/沙漠</td>
+<td class="tags">arabic, calligraphy, heart, pearl</td>
+</tr>
+<tr>
+<td class="num">34</td>
+<td><span class="prio" style="background:#16a34a">P1</span></td>
+<td><span class="category" style="background:#fee2e2">文字专项</span></td>
+<td class="type">日文清爽果冻核心</td>
+<td class="text">しろ</td>
+<td>日文字芯清楚，浅绿透明果冻风</td>
+<td>浅绿、奶白、柠檬黄；果冻树脂</td>
+<td>Japanese/mixed、可爱、清爽</td>
+<td class="tags">japanese, rounded_logo, jelly, fresh</td>
+</tr>
+<tr>
+<td class="num">35</td>
+<td><span class="prio" style="background:#16a34a">P1</span></td>
+<td><span class="category" style="background:#fee2e2">文字专项</span></td>
+<td class="type">韩文紫白偶像核心</td>
+<td class="text">엘린</td>
+<td>韩文字芯、紫白珠光、翼形边</td>
+<td>紫白、珠光、银；珍珠漆、晶体核心</td>
+<td>Korean、偶像、蝶翼/天使</td>
+<td class="tags">korean, idol, purple_white, embedded_in_core</td>
+</tr>
+</tbody></table>
+<h2>第三批增强差异</h2>
+<p class="batch-note">增强风格差异，避免 reference 库同质化。</p>
+<table>
+<thead><tr><th style="width:44px">#</th><th style="width:76px">优先级</th><th style="width:128px">大类</th><th style="width:170px">Reference 类型</th><th style="width:92px">测试文字</th><th>设计重点</th><th>色彩 / 材质</th><th>覆盖场景</th><th>入库 tags</th></tr></thead><tbody>
+<tr>
+<td class="num">36</td>
+<td><span class="prio" style="background:#6b7280">P2</span></td>
+<td><span class="category" style="background:#ede9fe">黑金动物</span></td>
+<td class="type">蛇形黑金环绕</td>
+<td class="text">Sharu</td>
+<td>黑金蛇形环绕中央宝石，神秘夜场</td>
+<td>黑、金、深绿；蛇鳞浅浮雕、宝石</td>
+<td>蛇、神秘、夜场、沙漠感</td>
+<td class="tags">snake, orbit, black_gold, mystery, jewel</td>
+</tr>
+<tr>
+<td class="num">37</td>
+<td><span class="prio" style="background:#6b7280">P2</span></td>
+<td><span class="category" style="background:#ede9fe">黑金动物</span></td>
+<td class="type">龙鳞紫金闪电</td>
+<td class="text">Draco</td>
+<td>龙鳞浅浮雕、紫金心核、闪电侧翼</td>
+<td>紫、金、黑、电黄；水晶、金属、霓虹</td>
+<td>龙、幻想、强 battle</td>
+<td class="tags">dragon, scale, lightning, royal, fantasy</td>
+</tr>
+<tr>
+<td class="num">38</td>
+<td><span class="prio" style="background:#6b7280">P2</span></td>
+<td><span class="category" style="background:#dcfce7">音乐 / 夜场</span></td>
+<td class="type">声波广播圆环</td>
+<td class="text">Nima</td>
+<td>圆形声波环、广播按钮、蓝白光</td>
+<td>蓝白、银、黑；玻璃环、细金属线</td>
+<td>Nima、电台、聊天、声波</td>
+<td class="tags">soundwave, radio, talk, clean_modern</td>
+</tr>
+<tr>
+<td class="num">39</td>
+<td><span class="prio" style="background:#6b7280">P2</span></td>
+<td><span class="category" style="background:#dcfce7">音乐 / 夜场</span></td>
+<td class="type">唱片霓虹 Club</td>
+<td class="text">Vickay</td>
+<td>唱片圆盘、霓虹轨道、夜店灯芯</td>
+<td>黑、紫、青蓝、粉；黑胶、霓虹、镜面</td>
+<td>rapper、party、节奏感</td>
+<td class="tags">vinyl, club, rhythm, neon</td>
+</tr>
+<tr>
+<td class="num">40</td>
+<td><span class="prio" style="background:#6b7280">P2</span></td>
+<td><span class="category" style="background:#dcfce7">音乐 / 夜场</span></td>
+<td class="type">聚光灯舞台核心</td>
+<td class="text">Stage</td>
+<td>小聚光灯灯头、舞台光束、镜面环</td>
+<td>金、黑、白；镜面金属、玻璃光束</td>
+<td>表演型主播、舞台、solo</td>
+<td class="tags">spotlight, stage, performer, mirror_trim</td>
+</tr>
+<tr>
+<td class="num">41</td>
+<td><span class="prio" style="background:#6b7280">P2</span></td>
+<td><span class="category" style="background:#ffedd5">Mascot / 食物</span></td>
+<td class="type">猫爪肉球果冻</td>
+<td class="text">Maru</td>
+<td>肉球中心、四粒趾垫、半透果冻</td>
+<td>桃粉、奶白、浅绿；果冻树脂</td>
+<td>宠物、肉球、小爪印</td>
+<td class="tags">paw, pet, jelly_resin, soft, cute</td>
+</tr>
+<tr>
+<td class="num">42</td>
+<td><span class="prio" style="background:#6b7280">P2</span></td>
+<td><span class="category" style="background:#ffedd5">Mascot / 食物</span></td>
+<td class="type">产品结构化龟樱 v2</td>
+<td class="text">Gna</td>
+<td>龟壳一体实体、樱桃鼓包，结构更完整</td>
+<td>樱桃红、薄荷绿、奶油白；果冻树脂</td>
+<td>G.na、龟壳、樱桃、可爱 mascot</td>
+<td class="tags">turtle_shell, cherry, mascot, jelly, dual_motif</td>
+</tr>
+<tr>
+<td class="num">43</td>
+<td><span class="prio" style="background:#6b7280">P2</span></td>
+<td><span class="category" style="background:#ffedd5">Mascot / 食物</span></td>
+<td class="type">土豆 Quiz 礼帽</td>
+<td class="text">Spud</td>
+<td>土豆椭圆主体、礼帽拱顶、霓虹题板</td>
+<td>土豆棕、蓝、橙；陶感树脂、霓虹玻璃</td>
+<td>Potato、quiz、礼帽、复古玩具</td>
+<td class="tags">potato, hat, quiz, retro_toy</td>
+</tr>
+<tr>
+<td class="num">44</td>
+<td><span class="prio" style="background:#6b7280">P2</span></td>
+<td><span class="category" style="background:#ffedd5">Mascot / 食物</span></td>
+<td class="type">蜜瓜藤蔓奶油绿</td>
+<td class="text">Operis</td>
+<td>蜜瓜切片核心、藤蔓手柄、奶油绿</td>
+<td>蜜瓜绿、奶白、浅黄；果冻树脂</td>
+<td>おっぺしゃん、蜜瓜、日文、清爽</td>
+<td class="tags">melon, vine, fruit, cream_green, japanese</td>
+</tr>
+<tr>
+<td class="num">45</td>
+<td><span class="prio" style="background:#6b7280">P2</span></td>
+<td><span class="category" style="background:#ffedd5">Mascot / 食物</span></td>
+<td class="type">花叶治愈果冻</td>
+<td class="text">Bloom</td>
+<td>花瓣护片、叶片底托、透明果冻核心</td>
+<td>粉、绿、奶白；透明树脂、柔光叶片</td>
+<td>温柔治愈、自然系、弱符号 fallback</td>
+<td class="tags">flower, leaf, healing, translucent_resin</td>
+</tr>
+<tr>
+<td class="num">46</td>
+<td><span class="prio" style="background:#6b7280">P2</span></td>
+<td><span class="category" style="background:#cffafe">徽章 / 战队</span></td>
+<td class="type">火炬 Rally 核心</td>
+<td class="text">Torch</td>
+<td>火炬灯头、火焰晶芯、战队底座</td>
+<td>橙、金、黑；火焰玻璃、金属</td>
+<td>rally、leader、团结、竞技</td>
+<td class="tags">torch, fire, rally, leader</td>
+</tr>
+<tr>
+<td class="num">47</td>
+<td><span class="prio" style="background:#6b7280">P2</span></td>
+<td><span class="category" style="background:#cffafe">徽章 / 战队</span></td>
+<td class="type">盾牌蓝银守护</td>
+<td class="text">Guard</td>
+<td>蓝银盾牌、圆润护甲边、中央字芯</td>
+<td>蓝、银、白；金属、玻璃</td>
+<td>守护、team、battle fallback</td>
+<td class="tags">shield, protection, battle, blue_silver</td>
+</tr>
+<tr>
+<td class="num">48</td>
+<td><span class="prio" style="background:#6b7280">P2</span></td>
+<td><span class="category" style="background:#fae8ff">奢品 / 夜聊</span></td>
+<td class="type">礼盒缎带粉金</td>
+<td class="text">Gifted</td>
+<td>礼盒弧面、缎带包裹、粉金果冻</td>
+<td>粉、金、奶白；缎带、珠光树脂</td>
+<td>gift、粉丝团、礼物感</td>
+<td class="tags">gift, ribbon, soft_luxury, pink_gold</td>
+</tr>
+<tr>
+<td class="num">49</td>
+<td><span class="prio" style="background:#6b7280">P2</span></td>
+<td><span class="category" style="background:#fae8ff">奢品 / 夜聊</span></td>
+<td class="type">丝绒幕帘舞台</td>
+<td class="text">Diva</td>
+<td>丝绒幕帘褶皱、圆拱舞台核心</td>
+<td>酒红、金、黑；丝绒、金属</td>
+<td>diva、舞台、优雅、夜场</td>
+<td class="tags">velvet, curtain, stage, elegant</td>
+</tr>
+<tr>
+<td class="num">50</td>
+<td><span class="prio" style="background:#6b7280">P2</span></td>
+<td><span class="category" style="background:#ecfccb">特殊材质</span></td>
+<td class="type">圣诞绒球毛毡</td>
+<td class="text">Noel</td>
+<td>红白绒球、毛毡包边、软灯芯</td>
+<td>红、白、金；毛毡、绒球、柔光树脂</td>
+<td>圣诞帽、节日、毛绒</td>
+<td class="tags">santa_hat, pompom, felt, plush</td>
+</tr>
+</tbody></table>
+</body></html>

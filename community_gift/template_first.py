@@ -179,6 +179,7 @@ def build_template_first_design(
                 "fields": reference_decision.fields,
                 "trace": reference_decision.trace_dict(),
             },
+            "creative_profile": slots["creative_profile"],
         },
     )
     return design, brief
@@ -274,6 +275,7 @@ def _extract_slots(host: HostInput, brief: HostBrief, intent: RetrievalIntent):
         "palette_name": color_fields["palette_name"],
         "intent_anchor_terms": intent_anchor_terms,
         "intent_avoid_text_scripts": list(intent.avoid_text_scripts),
+        "creative_profile": brief.creative_profile.model_dump(),
         "banned": banned,
         "discarded": _discarded(brief.symbols_raw, [primary_symbol, secondary_symbol]),
     }
@@ -474,6 +476,8 @@ def _build_prompt(slots: dict) -> str:
     colors = "、".join(slots["colors"])
     materials = "、".join(_soften_material_terms(slots["materials"]))
     lighting_phrase = "柔和棚拍主光、克制边缘描光、低反射材质对比、中央文字小范围内发光"
+    creative_motion_clause = _creative_motion_clause(slots)
+    wild_structure_clause = _wild_structure_clause(slots)
     fusion_note = slots.get("fusion_note") or ""
     fusion_clause = f"{fusion_note}。" if fusion_note else ""
     secondary_clause = (
@@ -499,13 +503,13 @@ def _build_prompt(slots: dict) -> str:
 
     prompt = f"""黑色背景，1:1 正方形画面，固定 45 度朝右产品视角，完整展示整支打call棒，从灯头、连接处、握柄到底部节点全部清晰可见，主体居中，高精度3D收藏级应援棒。灯头是视觉重心，握柄短而完整，整体是一体连续的圆润产品造型。顶部为{lamp_head_silhouette}，中央为完整饱满的实体核心，中间嵌入发光文字「{slots['display_text']}」。
 
-整体风格围绕{slots['primary_symbol']}主题延展，设定为{slots['theme_title']}，整体气质偏{slots['mood']}。
+整体风格围绕{slots['primary_symbol']}主题延展，设定为{slots['theme_title']}，整体气质偏{slots['mood']}。{creative_motion_clause}
 
 整体配色采用{colors}（主色锚点为{slots['color_anchor']}，来自{slots['palette_name']}）。背景保持纯黑棚拍质感；如果主题需要深色，用烟灰、枪灰、珠光灰或深色透明树脂表达，让产品边缘和材质层次仍然清楚。
 
 材质以{materials}为主，整体强调圆润实体厚度、材质对比、精致倒角、收藏级产品质感。亮面硬质饰件只作为薄边、微小徽章或少量连接点出现；皮革、织物或护具感元素转译为连续哑光包覆、浅压纹和干净表面。打光以{lighting_phrase}为主，重点表现真实厚度、清晰倒角、柔和受控高光。
 
-主题为{slots['primary_symbol']}的解构设计：{slots['symbol_translation']}{secondary_clause}。{fusion_clause}所有外扩装饰、包边、护片或框架都与灯头主体一体成型，中央核心保持完整饱满，不做空心镂空，也不做贴纸式平面图案。
+主题为{slots['primary_symbol']}的解构设计：{slots['symbol_translation']}{secondary_clause}。{fusion_clause}{wild_structure_clause}所有外扩装饰、包边、护片或框架都与灯头主体一体成型，中央核心保持完整饱满，不做空心镂空，也不做贴纸式平面图案。
 
 让整体灯头像一个被主题轮廓包裹塑造的收藏级应援圣物，既有偶像应援感，也有独特的个人辨识度。整体轮廓语言强调{slots['silhouette_language']}，从正面和侧面都能读出清楚的立体结构。
 
@@ -517,6 +521,122 @@ def _build_prompt(slots: dict) -> str:
 
 整体强调：收藏级实体产品渲染、强3D体积感、真实材质厚度、克制明暗层次、文字与中央核心局部发光、整支棒体不做全局霓虹泛光、干净棚拍产品感。整支打call棒完整入画，灯头、连接件、完整手柄和底部节点都清晰可见，产品像悬浮在纯黑摄影棚中。"""
     return _polish_prompt_text(_reserve_quotes_for_display_text(prompt, slots["display_text"]))
+
+
+def _creative_profile(slots: dict) -> dict:
+    profile = slots.get("creative_profile") or {}
+    return profile if isinstance(profile, dict) else {}
+
+
+def _creative_intensity(slots: dict) -> int:
+    profile = _creative_profile(slots)
+    try:
+        return max(0, min(3, int(profile.get("intensity", 0) or 0)))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _creative_axes(slots: dict) -> set[str]:
+    profile = _creative_profile(slots)
+    axes = profile.get("axes") or []
+    return {str(axis).strip().lower() for axis in axes if str(axis).strip()}
+
+
+def _creative_motion_clause(slots: dict) -> str:
+    intensity = _creative_intensity(slots)
+    if intensity <= 0:
+        return ""
+    if intensity >= 3:
+        return (
+            "整体允许更明显的上扬、外扩和前探张力，让主题边缘更有野性轮廓，"
+            "但中心实体核心、文字和完整棒体比例保持干净可读。"
+        )
+    return (
+        "整体在稳定应援棒结构上加入轻微上扬和外扩张力，"
+        "主题边缘更有生命感但不破坏中心核心。"
+    )
+
+
+def _wild_structure_clause(slots: dict) -> str:
+    intensity = _creative_intensity(slots)
+    axes = _creative_axes(slots)
+    if intensity <= 0:
+        return ""
+    structure_axes = {
+        "horn",
+        "claw",
+        "fang",
+        "spike",
+        "scale",
+        "crest",
+        "flame",
+        "predator",
+        "feather",
+        "lightning",
+    }
+    if not axes & structure_axes:
+        return ""
+    structure_terms = _structure_terms_for_axes(axes)
+    if intensity >= 3:
+        return (
+            f"这些野性或动势元素可以更大胆地产品化为{structure_terms}，形成强识别外轮廓；"
+            "这些结构仍与灯头一体成型，不遮挡中央文字。"
+        )
+    return (
+        f"这些野性或动势元素产品化为{structure_terms}，"
+        "与灯头一体成型，保持收藏玩具的圆润锋利平衡。"
+    )
+
+
+def _structure_terms_for_axes(axes: set[str]) -> str:
+    terms: list[str] = []
+    if "horn" in axes:
+        terms.append("上扬角弧")
+        terms.append("外挑角尖")
+    if "claw" in axes or "predator" in axes:
+        terms.append("外挑爪片")
+        terms.append("前探护翼")
+    if "fang" in axes:
+        terms.append("小型牙形切片")
+    if "spike" in axes:
+        terms.append("尖晶节点")
+        terms.append("斜切护片")
+    if "crest" in axes:
+        terms.append("顶部冠峰")
+        terms.append("脊冠护片")
+    if "flame" in axes:
+        terms.append("上扬火舌轮廓")
+        terms.append("流线火焰护片")
+    if "scale" in axes:
+        terms.append("浅浮雕鳞片")
+        terms.append("层叠鳞边")
+    if "feather" in axes:
+        terms.append("展翼护片")
+        terms.append("尾羽收束")
+    if "lightning" in axes:
+        terms.append("细窄电光折线")
+        terms.append("斜切光芯")
+    return "、".join(_unique(terms)) or "上扬护片、尖晶节点或浅浮雕切面"
+
+
+def _slot_text(slots: dict) -> str:
+    values: list[str] = []
+    for key in [
+        "primary_symbol",
+        "secondary_symbol",
+        "theme_title",
+        "mood",
+        "symbol_translation",
+        "supporting_translation",
+        "silhouette_language",
+        "lamp_head_silhouette",
+        "handle_phrase",
+    ]:
+        values.append(str(slots.get(key) or ""))
+    values.extend(str(value) for value in slots.get("materials") or [])
+    values.extend(str(value) for value in slots.get("colors") or [])
+    values.extend(str(value) for value in slots.get("intent_anchor_terms") or [])
+    return " ".join(values).lower()
 
 
 def _build_negative_prompt(slots: dict) -> str:
@@ -547,6 +667,12 @@ def _build_negative_prompt(slots: dict) -> str:
         "misspelled name",
         "wrong name",
         "extra text",
+        "extra visible words",
+        "theme words rendered as text",
+        "translated theme words",
+        "annotation text",
+        "caption text",
+        "product labels",
         "external nameplate",
         # 过曝/强反光/廉价塑料/大面积金属
         "overexposed",
@@ -559,18 +685,27 @@ def _build_negative_prompt(slots: dict) -> str:
     if not avoid_scripts:
         avoid_scripts = _infer_avoid_scripts_from_text(slots.get("display_text", ""))
     script_negatives = _negatives_from_avoid_scripts(avoid_scripts)
-    return ", ".join(_unique(base + slots["banned"] + script_negatives))
+    creative_safety = []
+    if _creative_intensity(slots) > 0:
+        creative_safety = [
+            "horns covering text",
+            "claws covering text",
+            "outer decorations covering text",
+            "obscured central text",
+            "animal head replacing product",
+        ]
+    return ", ".join(_unique(base + slots["banned"] + script_negatives + creative_safety))
 
 
 _SCRIPT_NEGATIVE_TERMS: dict[str, list[str]] = {
-    "latin": ["Latin text"],
-    "korean": ["Korean text"],
-    "arabic": ["Arabic text"],
-    "chinese": ["Chinese text"],
-    "japanese": ["Japanese text"],
+    "latin": ["Latin text", "random Latin filler letters"],
+    "korean": ["Korean text", "Korean hangul"],
+    "arabic": ["Arabic text", "Arabic script"],
+    "chinese": ["Chinese text", "Chinese characters", "Chinese label", "Chinese annotation"],
+    "japanese": ["Japanese text", "Japanese kana", "Japanese kanji"],
     "cyrillic": ["Cyrillic text"],
-    "thai": ["Thai script"],
-    "devanagari": ["Hindi text"],
+    "thai": ["Thai script", "Thai text"],
+    "devanagari": ["Hindi text", "Devanagari text"],
 }
 
 

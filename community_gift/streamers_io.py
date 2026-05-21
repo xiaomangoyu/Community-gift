@@ -30,6 +30,7 @@ from .models import HostInput
 
 _HEADER_RE = re.compile(r"^#\s+(.+?)\s*$")
 _BULLET_FIELD_RE = re.compile(r"^-\s+\*\*([^*]+)\*\*:\s*(.+?)\s*$")
+_CREATIVE_FIELD_RE = re.compile(r"^-\s+(?:\*\*)?([^:*`]+?)(?:\*\*)?:\s*(.+?)\s*$")
 _SYMBOL_RE = re.compile(r"^-\s+`([^`]+)`\s*(?:\(([^)]+)\))?\s*$")
 _PLAIN_BULLET_RE = re.compile(r"^-\s+`([^`]+)`\s*$")
 
@@ -101,6 +102,9 @@ def _parse_signals_md(path: Path) -> dict:
         "avatar_file": "",
         "stickers_file": "",
         "characterization": "",
+        "creative_mode": "",
+        "wildness_score": "",
+        "wildness_axes": [],
     }
     char_lines: list[str] = []
     section = ""
@@ -163,6 +167,23 @@ def _parse_signals_md(path: Path) -> dict:
                     record["stickers_file"] = fname
             continue
 
+        if section in {"creative controls", "creative profile", "creative guidance"}:
+            bullet = _CREATIVE_FIELD_RE.match(line)
+            if bullet:
+                key = bullet.group(1).strip().lower().replace(" ", "_").replace("-", "_")
+                value = bullet.group(2).strip()
+                if key in {"creative_mode", "wildness_mode"}:
+                    record["creative_mode"] = value
+                elif key in {"wildness_score", "wildness_intensity", "creative_intensity"}:
+                    record["wildness_score"] = value
+                elif key in {"wildness_axes", "creative_axes", "creative_tags"}:
+                    record["wildness_axes"].extend(_split_axis_list(value))
+                continue
+            plain = _PLAIN_BULLET_RE.match(line)
+            if plain:
+                record["wildness_axes"].append(plain.group(1).strip())
+            continue
+
     record["characterization"] = " ".join(char_lines).strip()
     return record
 
@@ -172,6 +193,14 @@ def _extract_backticked(text: str) -> str:
 
     match = re.search(r"`([^`]+)`", text)
     return match.group(1).strip() if match else ""
+
+
+def _split_axis_list(value: str) -> list[str]:
+    return [
+        part.strip().strip("`")
+        for part in value.replace("、", ",").replace("，", ",").replace("/", ",").split(",")
+        if part.strip().strip("`")
+    ]
 
 
 def _to_host_input(record: dict, row_id: int) -> HostInput:
@@ -215,6 +244,9 @@ def _to_host_input(record: dict, row_id: int) -> HostInput:
             "avatar_file": record["avatar_file"],
             "stickers_file": record["stickers_file"],
             "characterization": record["characterization"],
+            "creative_mode": record["creative_mode"],
+            "wildness_score": record["wildness_score"],
+            "wildness_axes": record["wildness_axes"],
             "folder": str(folder),
         },
     )

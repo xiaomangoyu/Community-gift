@@ -23,6 +23,67 @@
 
 后续逻辑应该先判断主播适合的灯头主体形态，再决定颜色、符号、材质、文字和装饰。
 
+## 重要共识：基础稳定后，创意轴是关键变量
+
+当前方向不是让最终 prompt 重新变成自由发挥，而是在稳定基础模板之上增加一层可解释、可开关的创意变量。
+
+可以把整体分成两层：
+
+```text
+基础层 baseline
+  黑底、完整单支应援棒、灯头核心、连接件、手柄、底盖、唯一 exact text
+
+创意层 creative_axes
+  根据主播数据决定是否更发散，以及往哪个方向发散
+```
+
+“野性”只是创意层中的一个轴，不是唯一目标。它适合黑豹、鹰、乌鸦、龙、牛角、拳击等主播，会影响外轮廓、羽翼、角爪、鳞片和前探张力。但其他主播可能更适合可爱、奢华、音乐、战队、浪漫、清爽、神秘、街头或治愈。
+
+这层变量的原则：
+
+- 默认不开启，先保住基础产品结构和文字安全。
+- 只有数据、VLM facts 或人工/研发字段支持时才打开。
+- 创意判断先以气质为主，轮廓和姿态辅助落地。
+- 材质暂时不进入 creative axes，只跟随 reference / template 的材质槽位。
+- VLM 只负责提取事实，不负责决定创意强度。
+- mapper / routers 把事实映射成结构化 `creative_profile`。
+- template-first prompt 只消费结构化 profile，不直接吃创意散文。
+
+未来研发可以在 `signals.md` 里追加可选控制块：
+
+```md
+## Creative controls
+- **creative_mode**: baseline | expressive | wild
+- **wildness_score**: 0-3
+- **wildness_axes**: horn, claw, spike, swept_wing, rock_glam
+```
+
+更通用的长期接口可以是：
+
+```json
+{
+  "creative_mode": "baseline | expressive | bold",
+  "creative_intensity": 0,
+  "creative_axes": ["wild", "luxury", "music"],
+  "axis_details": ["swept_wing", "lightning", "upward"]
+}
+```
+
+参考创意轴：
+
+| 创意轴 | 典型场景 | 影响 |
+| --- | --- | --- |
+| `wild` | 黑豹、鹰、乌鸦、龙、牛角 | 更外扩、更锋利、羽翼/角/爪/鳞片更强 |
+| `cute` | 蜜瓜、土豆、龟、猫、云朵 | 更圆润、果冻、奶油色、软萌比例 |
+| `luxury` | 皇冠、女王、阿拉伯金绿、珠宝 | 宝石核心、细边轮廓、徽章感、收藏级层次 |
+| `music` | DJ、麦克风、rapper、唱歌 | 声波、麦克风轮廓、夜场光、舞台动势 |
+| `battle` | fighter、police、PK、Free Fire | 徽章、护片、能量环、战队秩序感 |
+| `romantic` | 爱心、蝴蝶、粉紫、陪伴 | 柔光、透明宝石、丝带和心形边缘 |
+| `fresh` | 蜜瓜、海岛、薄荷、青柠 | 半透明果冻、浅绿、玻璃、叶片 |
+| `mystic` | 阿拉伯、沙漠、古金、龙 | 古金、沙岩、宝石、卷曲结构 |
+| `street` | 棒球帽、rapper、neon、游戏 | 前压帽檐、霓虹涂层、运动感 |
+| `cozy` | 房间、聊天、陪伴、小动物 | 短绒、奶白、柔雾、圆胖结构 |
+
 ## 可用主体形态
 
 ### 心形

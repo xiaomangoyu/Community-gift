@@ -25,10 +25,6 @@
 ## Characterization
 This anchor hosts a conversational stream, creating a virtual 'majlis' (gathering) atmosphere where he engages with guests and viewers through voice chats, storytelling, poetry, and music. The content is varied, sometimes taking place from a first-person view while driving, creating a casual road-trip vibe. The visual identity is deeply rooted in a traditional Arab/Bedouin aesthetic, with the falcon ('شاهين') serving as the central mascot, constantly displayed as a graphic and spammed by the community. The vibe is one of strong camaraderie and loyalty, shifting from relaxed and intimate conversations to intense, unified pride during community rallies or competitions.
 
-## 500-coin object recommendation
-- **object**: `light_stick`
-- **reason**: The creator's brand has strong rally and battle energy centered on the falcon mascot, making the light stick with a sculpted falcon topper the most impactful expression of community pride.
-
 ## Media
 - avatar: `avatar.jpg` (token `HC3qbfJphoprVix8dVsl0DSMgUe`)
 - stickers: `stickers.jpg` (token `JUfwbuQ8coelLrxFosql4FMjg1L`)

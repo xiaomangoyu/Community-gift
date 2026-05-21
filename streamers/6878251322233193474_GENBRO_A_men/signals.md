@@ -22,10 +22,6 @@
 ## Characterization
 The anchor, GENBRO, is a friendly and interactive Korean streamer who hosts 'just chatting' sessions and plays screen golf. He fosters a close-knit, international community by engaging with viewers in both Korean and English. His streams have a relaxed and casual vibe, often featuring playful banter from his studio setup, which includes a professional microphone and colorful background lighting. He presents a varied and personal look, sometimes wearing glasses, changing outfits, or even appearing with a face mask, making his content feel authentic and relatable.
 
-## 500-coin object recommendation
-- **object**: `light_sign`
-- **reason**: The creator has a community name ('A.men') and a community emoji (🫟) which are ideal for a light sign, but lacks a visual hero for a light stick topper.
-
 ## Media
 - avatar: `avatar.jpg` (token `YJMbbre7roRTfcx6w8slyyCvg5X`)
 - stickers: `stickers.jpg` (token `FQ08bLQogoOJDkxHiwAlXDQZguh`)

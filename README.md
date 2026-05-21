@@ -24,6 +24,54 @@
 
 2026-05-20 的有效方向是：VLM 做短、结构化、可执行的槽位抽取；deterministic mapper / routers / template-first prompt 负责把槽位稳定装配成最终 prompt。详细复盘见 `references/20260520_vlm_slot_prompt_learnings.md`。
 
+## 创意轴共识
+
+基础稳定版做好之后，下一层关键变量不是继续让 LLM 自由写 prompt，而是引入可控的 `creative_axes`。它描述“这个主播适合往哪个创意方向发散”，并决定 template-first prompt 在基础产品骨架之外追加哪些增强句。
+
+当前共识：
+
+- `baseline` 是默认兜底：完整应援棒、黑底、中央 exact text、产品结构稳定。
+- `creative_axes` 是第二层变量：只在主播数据、VLM facts 或研发显式字段支持时开启。
+- “野性”只是一个创意轴，不是唯一目标；它和可爱、奢华、音乐、战队、浪漫、清爽、神秘、街头等轴并列。
+- 当前创意轴先以气质为主，轮廓和姿态辅助落地；材质暂时不进入 creative axes，只跟随 reference / template 的材质槽位。
+- VLM 不决定创意强度，只输出事实槽位；deterministic mapper 决定 `baseline / expressive / wild` 或后续更通用的创意强度。
+- prompt 模板只消费结构化创意 profile，不直接吃散文式创意描述。
+
+建议研发未来可以在 `streamers/<id>/signals.md` 里追加可选字段：
+
+```md
+## Creative controls
+- **creative_mode**: baseline | expressive | wild
+- **wildness_score**: 0-3
+- **wildness_axes**: horn, claw, spike, swept_wing, rock_glam
+```
+
+更通用的后续接口可以升级为：
+
+```json
+{
+  "creative_mode": "baseline | expressive | bold",
+  "creative_intensity": 0,
+  "creative_axes": ["wild", "luxury", "music"],
+  "axis_details": ["swept_wing", "lightning", "upward"]
+}
+```
+
+常见创意轴：
+
+| 轴 | 适合场景 | Prompt 影响 |
+| --- | --- | --- |
+| `wild` | 黑豹、鹰、乌鸦、龙、牛角、拳击 | 外扩轮廓、羽翼、角、爪、鳞片、前探张力 |
+| `cute` | 蜜瓜、土豆、龟、猫、云朵 | 圆润比例、果冻树脂、奶油色、软萌边缘 |
+| `luxury` | 皇冠、黑金、女王、阿拉伯金绿、珠宝 | 宝石核心、细边轮廓、徽章感、收藏级层次 |
+| `music` | DJ、麦克风、rapper、唱歌 | 声波环、麦克风轮廓、夜场光、舞台动势 |
+| `battle` | fighter、police、PK、Free Fire | 徽章、护片、能量环、战队秩序感 |
+| `romantic` | 爱心、蝴蝶、粉紫、陪伴感 | 柔光核心、透明宝石、丝带和心形边缘 |
+| `fresh` | 蜜瓜、海岛、薄荷、青柠 | 半透明果冻、浅绿、玻璃、叶片和贝母 |
+| `mystic` | 阿拉伯、沙漠、古金、龙、符号 | 古金、沙岩、宝石、卷曲结构 |
+| `street` | 棒球帽、rapper、neon、游戏 | 前压帽檐、霓虹涂层、运动街头感 |
+| `cozy` | 房间、聊天、陪伴、小动物 | 短绒、奶白、柔雾、圆胖结构 |
+
 ## 当前架构重点
 
 工作流不再把 CSV 字段直接堆进一个大 prompt。每条主播数据会先生成三层计划：

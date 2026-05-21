@@ -24,10 +24,6 @@
 ## Characterization
 The anchor, Gaga, hosts a highly interactive and comedic chat-focused stream from a simple home studio. Her content revolves around singing, sharing stories, and offering humorous, straight-talking advice, creating an atmosphere that feels like a late-night talk show with a funny best friend. The vibe is intimate, unfiltered, and playful, characterized by a strong sense of community built on inside jokes (like frequent talk of farts) and teasing banter. She is very expressive, often making funny faces, and keeps the visual focus on herself with a professional microphone front and center.
 
-## 500-coin object recommendation
-- **object**: `light_sign`
-- **reason**: The light_sign fits the talk-show/belonging energy and best leverages the creator's strongest assets: a distinct community name and a clear community-adopted emoji accent.
-
 ## Media
 - avatar: `avatar.jpg` (token `Ds7IbmbKyoL82kxiYSblyh5CgPb`)
 - stickers: (none — no high-scoring community/creator stickers in bundle)
