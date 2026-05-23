@@ -1,0 +1,4 @@
+interface:
+  display_name: "Seedream Ref Collage"
+  short_description: "Build Seedream ref collage boards."
+  default_prompt: "Create a Seedream batch collage with reference image usage statistics for the latest output directory."
