@@ -50,6 +50,7 @@ def main() -> None:
     usage_json = output_dir / args.usage_json
     usage_md = output_dir / args.usage_md
     collage_path = output_dir / args.output_name
+    hide_references = should_hide_references(output_dir, args.model_label, args.hide_references)
 
     write_usage_csv(usage_csv, usage_rows)
     usage_json.write_text(json.dumps(usage_rows, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -66,12 +67,15 @@ def main() -> None:
         columns=args.columns,
         model_label=args.model_label,
         output_dir=output_dir,
+        hide_references=hide_references,
     )
 
     print(f"Collage: {collage_path}")
     print(f"Usage summary: {usage_md}")
     print(f"Usage CSV: {usage_csv}")
     print(f"Generated images found: {len(images_by_row)}/{len(rows)}")
+    if hide_references:
+        print("Reference thumbnails hidden for this collage.")
 
 
 def parse_args() -> argparse.Namespace:
@@ -94,6 +98,11 @@ def parse_args() -> argparse.Namespace:
         help="Markdown usage summary filename.",
     )
     parser.add_argument("--columns", type=int, default=4, help="Number of collage columns.")
+    parser.add_argument(
+        "--hide-references",
+        action="store_true",
+        help="Build a generated-image gallery without reference thumbnails or ref usage chips.",
+    )
     parser.add_argument(
         "--title",
         default="Seedream 4.5 Streamers x Reference Map",
@@ -127,6 +136,16 @@ def resolve_output_dir(value: str | None) -> Path:
     if not (path / "routing_trace.json").exists():
         raise FileNotFoundError(f"Missing routing_trace.json in {path}")
     return path
+
+
+def should_hide_references(output_dir: Path, model_label: str, explicit: bool) -> bool:
+    if explicit:
+        return True
+    label = model_label.lower().replace("_", "-")
+    if "gpt-image" in label or "image2" in label:
+        return True
+    images_dir = output_dir / "images"
+    return images_dir.exists() and any(images_dir.glob("*.gpt_image_2.json"))
 
 
 def load_json(path: Path) -> Any:
@@ -282,6 +301,7 @@ def build_collage(
     columns: int,
     model_label: str,
     output_dir: Path,
+    hide_references: bool = False,
 ) -> None:
     row_lookup = {int(row.get("row_id") or 0): row for row in rows}
     usage_by_row = {
@@ -294,7 +314,7 @@ def build_collage(
     total = len(row_lookup)
     columns = max(1, columns)
     card_w = 455
-    card_h = 604
+    card_h = 526 if hide_references else 604
     gap = 26
     margin_x = 54
     header_h = 210
@@ -321,21 +341,32 @@ def build_collage(
     draw.text((margin_x, 62), title, font=fonts["title"], fill="#fff6e6")
     draw.text((margin_x, 120), f"{total} {subtitle}", font=fonts["sub"], fill="#aeb8c7")
 
-    chip_x = margin_x
-    chip_y = 158
-    for ref_id, count in counts.most_common(8):
-        label = f"{count}x {ref_id}"
+    if hide_references:
+        label = "generated-only gallery"
         label_w = text_width(draw, label, fonts["small"])
         draw.rounded_rectangle(
-            (chip_x, chip_y, chip_x + label_w + 24, chip_y + 28),
+            (margin_x, 158, margin_x + label_w + 24, 186),
             radius=14,
             fill="#162131",
             outline="#344257",
         )
-        draw.text((chip_x + 12, chip_y + 6), label, font=fonts["small"], fill="#dce7f7")
-        chip_x += label_w + 34
-        if chip_x > width - margin_x - 220:
-            break
+        draw.text((margin_x + 12, 164), label, font=fonts["small"], fill="#dce7f7")
+    else:
+        chip_x = margin_x
+        chip_y = 158
+        for ref_id, count in counts.most_common(8):
+            label = f"{count}x {ref_id}"
+            label_w = text_width(draw, label, fonts["small"])
+            draw.rounded_rectangle(
+                (chip_x, chip_y, chip_x + label_w + 24, chip_y + 28),
+                radius=14,
+                fill="#162131",
+                outline="#344257",
+            )
+            draw.text((chip_x + 12, chip_y + 6), label, font=fonts["small"], fill="#dce7f7")
+            chip_x += label_w + 34
+            if chip_x > width - margin_x - 220:
+                break
 
     shadow = make_shadow((card_w + 24, card_h + 24))
     accents = ["#26d5c8", "#ff5b91", "#ffd166", "#a78bfa", "#7bd88f"]
@@ -372,6 +403,7 @@ def build_collage(
             accent=accents[grid_index % len(accents)],
             card_w=card_w,
             card_h=card_h,
+            hide_references=hide_references,
         )
         canvas.alpha_composite(card, (x, y))
 
@@ -401,24 +433,32 @@ def draw_card(
     accent: str,
     card_w: int,
     card_h: int,
+    hide_references: bool = False,
 ) -> None:
     draw.rounded_rectangle((0, 0, card_w, card_h), radius=22, fill="#101823", outline="#2d3b4e", width=2)
-    draw.rounded_rectangle((18, 18, card_w - 18, 395), radius=16, fill="#030405", outline="#1f2a38", width=1)
+    image_bottom = 430 if hide_references else 395
+    image_fit_h = image_bottom - 30
+    draw.rounded_rectangle((18, 18, card_w - 18, image_bottom), radius=16, fill="#030405", outline="#1f2a38", width=1)
     if image_path and image_path.exists():
-        image = fit_image(image_path, card_w - 48, 365)
-        card.alpha_composite(image, (24 + (card_w - 48 - image.width) // 2, 24 + (365 - image.height) // 2))
+        image = fit_image(image_path, card_w - 48, image_fit_h)
+        card.alpha_composite(image, (24 + (card_w - 48 - image.width) // 2, 24 + (image_fit_h - image.height) // 2))
     else:
-        draw.text((36, 180), "missing image", font=fonts["meta"], fill="#ff9c9c")
+        draw.text((36, image_bottom // 2), "missing image", font=fonts["meta"], fill="#ff9c9c")
 
-    draw.rounded_rectangle((18, 414, 68, 444), radius=15, fill="#1d2938", outline="#46576d")
+    meta_top = image_bottom + 19
+    draw.rounded_rectangle((18, meta_top, 68, meta_top + 30), radius=15, fill="#1d2938", outline="#46576d")
     number = f"{row_id:02d}"
-    draw.text((43 - text_width(draw, number, fonts["small"]) / 2, 421), number, font=fonts["small"], fill="#deebfb")
+    draw.text((43 - text_width(draw, number, fonts["small"]) / 2, meta_top + 7), number, font=fonts["small"], fill="#deebfb")
 
     title_lines = wrap_pixels(draw, host_name, fonts["card_title"], card_w - 102, 2)
-    title_y = 410
+    title_y = meta_top - 4
     for line in title_lines:
         draw.text((82, title_y), line, font=fonts["card_title"], fill="#fff4df")
         title_y += 25
+
+    if hide_references:
+        draw.rounded_rectangle((18, card_h - 18, card_w - 18, card_h - 12), radius=3, fill=accent)
+        return
 
     ref_box = (18, 468, 108, 558)
     draw.rounded_rectangle(ref_box, radius=14, fill="#050608", outline="#263243")

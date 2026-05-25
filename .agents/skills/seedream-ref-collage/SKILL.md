@@ -26,6 +26,12 @@ Use the project script whenever a Seedream batch output directory contains:
 <output-dir>/images/*_1.png
 ```
 
+For `gpt-image-2` / `gpt_image_2` batches, do not show reference thumbnails in
+the final board unless the run explicitly used the image edit endpoint with
+uploaded reference images. Use `--hide-references` (or set
+`--model-label gpt-image-2`, which is auto-detected) so the board is a
+generated-image gallery rather than a reference map.
+
 Run on a specific batch:
 
 ```bash
@@ -106,7 +112,19 @@ python3 scripts/build_seedream_ref_collage.py outputs/<batch_name> \
   --output-name streamers32_seedream45_ref_collage.png
 ```
 
-Keep the default style for this project unless the user requests a different format: dark dashboard background, 4 columns, large generated image, row chip, host name, selected ref thumbnail, ref id, source image name, score, and matched dimensions.
+For image2 generated-only galleries:
+
+```bash
+python3 scripts/build_seedream_ref_collage.py outputs/<batch_name> \
+  --columns 4 \
+  --title "GPT Image 2 Streamers" \
+  --subtitle "generated lightstick images" \
+  --model-label gpt-image-2 \
+  --hide-references \
+  --output-name image2_gallery.png
+```
+
+Keep the default Seedream style for this project unless the user requests a different format: dark dashboard background, 4 columns, large generated image, row chip, host name, selected ref thumbnail, ref id, source image name, score, and matched dimensions. For image2 generated-only runs, hide the reference area and use the same card style as a plain gallery.
 
 ## Validation
 
