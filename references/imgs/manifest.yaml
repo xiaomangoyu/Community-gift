@@ -1,1265 +1,2200 @@
 # Reference image manifest.
 #
-# Each entry is a validated (image, prompt) pair. The reference is treated as
-# a multi-dimensional anchor — it contributes not just thematic information,
-# but also orientation / proportion / scale / aesthetic conventions that apply
-# to every host.
+# All reference files use one stable snake_case id. Image and prompt filenames
+# should match the entry id: <id>.<image_ext> and <id>.txt.
 #
-# RECALL MODEL
-# ------------
-# ReferenceRouter scores every reference against host signals, takes top-N
-# (default 3), and falls back to random sampling from the quality:strong pool
-# when all scores are 0. References are passed to Seedream as binary_data; the
-# 1:1 relationship with `role_description` is preserved by writing it into
-# pre_llm_result.input{1,2,3}.
+# ROUTING MODEL
+# ReferenceRouter first normalizes host + manifest tags through tag_aliases.yaml,
+# then scores exact tag intersections. Keep manifest tags canonical and include
+# both specific tags and broad bridge tags, e.g. basketball + sport_ball + sport.
+# See TAG_VOCAB.md for the controlled tag vocabulary.
 #
-# SCORING WEIGHTS (in ReferenceRouter)
+# SCORING WEIGHTS
 #   shape:        3
 #   color:        2
 #   material:     1
 #   vibe / text:  1 each
-#   quality:strong bonus: +0.5
+#   quality:strong bonus: +0.5 after at least one real tag match
 #
 # DESIGNER ADD-FLOW
-#   1. Drop <id>.{png,txt} into this folder.
-#   2. Append an entry below with tags + role_description.
-#   3. No code change. Re-run wells; ReferenceRouter picks it up automatically.
-#
-# Fragments (symbol_translation / text_style / bottom_node / mood / palette_hint
-# / material_hint) are NOT stored here anymore. Text scaffolding belongs in
-# references/shape/rules.yaml. The reference image carries the visual half
-# via i2i; role_description tells Seedream what each image contributes.
+#   1. Drop <id>.<image_ext> and <id>.txt into this folder.
+#   2. Append one manifest entry with normalized tags + role_description.
+#   3. Run the reference validation / routing smoke tests.
 
 version: 2
-
 references:
-  - id: butterfly_korean
-    image: Butterfly.png
-    prompt: Butterfly.txt
-    quality: strong
-    notes: "韩文 + 蝶翼 + 紫色;非拉丁文字成功嵌入实体爱心核心"
-    tags:
-      shape: [butterfly, insect, wing, heart_silhouette, symmetric]
-      color: [purple, lavender, pearl, white]
-      material: [translucent_resin, pearlescent_lacquer, jelly_crystal, jelly_resin]
-      vibe: [dreamy, soft, idol_support, romantic]
-      text: [non_latin, korean, embedded_in_core, 3d_glow]
-    role_description: >-
-      A premium idol lightstick on pure black at a 45-degree right-facing hero
-      angle. The lamp head is a one-piece solid heart with NO outer frame and
-      NO hollow outline, flanked by symmetric translucent butterfly-wing
-      silhouettes. Non-Latin Korean glyphs are embedded directly into the
-      solid central core with 3D bevel, soft rim glow, and pearlescent
-      lacquer. Palette is purple / lavender / pearl-white. This image
-      contributes:
-      orientation (45-degree right hero shot),
-      lamp-head structure (one-piece solid heart with no outer frame),
-      wing-attached silhouette extension,
-      non-Latin glyph rendering inside a solid core.
-
-  - id: heart_arabic_romance
-    image: Cream_heart.png
-    prompt: Cream_heart.txt
-    quality: strong
-    notes: "阿拉伯文字 + 浪漫异域气质;一体实体爱心,书法笔势装饰"
-    tags:
-      shape: [heart, solid_one_piece, flowing_decoration]
-      color: [pink, smoke_pink, rose, pearl, champagne]
-      material: [pearlescent_resin, soft_jelly_crystal, jelly_resin, mirror_trim]
-      vibe: [romantic, elegant, exotic, gentle, dreamy]
-      text: [non_latin, arabic, calligraphy, embedded_in_core, 3d_glow]
-    role_description: >-
-      A premium idol lightstick on pure black at a 45-degree right-facing hero
-      angle. The lamp head is a fully closed one-piece solid heart with
-      flowing surface curvature and calligraphy-like ribbon ornaments
-      sculpted INTO the heart body, not as an outer frame. Non-Latin Arabic
-      glyphs are embedded into the solid center with calligraphic 3D
-      typography, soft inner glow, and pearlescent rim. Palette is rose /
-      smoke pink / pearl / champagne. This image contributes:
-      gentle exotic romantic mood,
-      calligraphic / non-Latin script handling,
-      a fully closed solid-heart silhouette (no frame, no hollow),
-      flowing surface decoration that lives inside the heart body.
-
-  - id: mascot_cherry_jelly
-    image: Cherry.png
-    prompt: Cherry.txt
-    quality: strong
-    fallback_safe: true
-    notes: "两个 mascot 融合(樱桃+龟壳)+ 果冻甜系材质;短拉丁文嵌入"
-    tags:
-      shape: [mascot, fruit_cluster, fruit, food, shell, rounded_dome, dual_motif]
-      color: [cherry_red, cream, mint_green, pistachio, pearl_white]
-      material: [jelly_resin, cream_enamel, pearlescent_trim]
-      vibe: [cute, sweet, playful, soft, idol_support, designer_toy]
-      text: [latin, short, embedded_in_core, 3d_glow, candy_emboss]
-    role_description: >-
-      A premium idol lightstick on pure black at a 45-degree right-facing hero
-      angle. The lamp head is a one-piece solid jelly form that fuses two
-      mascot motifs (cherry domes on top, green turtle-shell curvature on the
-      lower half) — they share one outline rather than being two separate
-      objects pasted together. Short Latin text is embedded into the central
-      core with 3D candy-bevel typography and soft inner glow. Palette is
-      cherry red / cream / mint green / pearl. This image contributes:
-      cute jelly material world,
-      how to fuse two thematic motifs into one silhouette,
-      short Latin glyph handling with candy-emboss typography,
-      sweet designer-toy collectible quality.
-
-  - id: purple_heart_y2k
-    image: Purple_heart.png
-    prompt: Purple_heart.txt
-    quality: strong
-    fallback_safe: true
-    notes: "紫色一体实体爱心 + Y2K 甜感 + 英文嵌入;包裹式心形体积"
-    tags:
-      shape: [heart, solid_one_piece, wrapped_layers]
-      color: [purple, grape, lavender, pearl, silver_white]
-      material: [jelly_resin, pearlescent_lacquer, crystal_core]
-      vibe: [gentle, dreamy, sweet, companionship, idol_support]
-      text: [latin, handwriting, embedded_in_core, 3d_glow, y2k_emboss]
-    role_description: >-
-      A premium idol lightstick on pure black at a 45-degree right-facing hero
-      angle. The lamp head is a closed one-piece solid heart with soft
-      pillow-volume and wrapped layered cross-sections — the heart silhouette
-      is built from stacked rounded slices, not from an outer frame. Latin
-      handwriting-style text is embedded into the central core with 3D
-      handwriting typography, soft inner glow, and crystal-jelly emboss
-      effect. Palette is deep purple / grape / lavender / pearl. This image
-      contributes:
-      gentle handwritten Latin glyph treatment,
-      wrapped/layered heart cross-section structure,
-      soft pillow-volume one-piece heart body (no outer frame),
-      idol-support warmth.
-
-  - id: boxer2_street_glove
-    image: boxer2.png.jpg
-    prompt: boxer2.png.txt
-    quality: strong
-    notes: "拳击手套 + LA GANGA 字标 + 紫绿高饱和潮流玩具感"
-    tags:
-      shape: [boxing_glove, glove, sport, chunky_silhouette, armor, compact_base_node]
-      color: [neon_green, electric_purple, purple, green, black, high_contrast]
-      material: [glossy_plastic, spray_paint_finish, metallic_trim, acrylic_light_core, clear_coating]
-      vibe: [street_sport, energetic, youthful, punchy, collectible_toy, idol_support]
-      text: [latin, short, embedded_wordmark, 3d_glow, thick_outline_letters]
-    role_description: >-
-      A premium idol lightstick on pure black at a 45-degree right-facing hero
-      angle. The lamp head is a simplified boxing-glove volume with a compact
-      grip, bold green-purple contrast, glossy toy-plastic spray finish, and
-      a large short Latin wordmark locked into the glove face. Palette is
-      purple / neon green / black / cool white. This image contributes:
-      bold glove-shaped lamp-head volume,
-      high-saturation street-sport colour blocking,
-      thick outlined wordmark treatment,
-      glossy collectible toy finish with compact sporty bottom structure.
-
-  - id: pink_hair_bull_star
-    image: Hair.jpg
-    prompt: Hair.txt
-    quality: strong
-    notes: "粉色长毛 + 银白牛角 + 星形灯头;甜酷毛发方向"
-    tags:
-      shape: [star, horn, cow_horn, fur, hair, soft_texture, symmetric_silhouette]
-      color: [hot_pink, candy_pink, electric_pink, silver_white, pearl_white]
-      material: [glossy_resin, mirror_metal, translucent_jelly, jelly_resin, fiber_hair, velvet_flock, pearl_coating]
-      vibe: [glamorous, sweet_cool, edgy, romantic, luxury_collectible, idol_support]
-      text: [latin, short, centered_wordmark, 3d_glow, ornamental_script]
-    role_description: >-
-      A premium idol lightstick on pure black at a 45-degree right-facing hero
-      angle. The lamp head uses a bright pink star-shaped core with silver
-      upward horn arcs and real-looking pink hair/fur fibers attached around
-      the perimeter. The design should read as sweet-cool glam energy rather
-      than a literal animal head. Palette is hot pink / candy pink / silver
-      white / pearl white. Short Latin text is centered in the glowing star
-      core. This image contributes:
-      star lamp-head silhouette,
-      soft pink hair/fur as tactile outer texture,
-      silver horn-like structural accents,
-      glamorous pink-and-silver collectible identity.
-
-  - id: dragon_empire_lightning
-    image: Dragon.png
-    prompt: Dragon.txt
-    quality: strong
-    notes: "紫金龙鳞 + 闪电 + 帝国权杖感;适合龙/雷电/霸气/幻想装备"
-    tags:
-      shape: [dragon, scale, electric, lightning, horn, crest, armor]
-      color: [purple, gold, yellow, black, electric_yellow]
-      material: [crystal_core, metallic_trim, glossy_resin, neon_tube, faceted_crystal]
-      vibe: [battle, powerful, royal, fantasy, energetic, idol_support, dramatic]
-      text: [latin, short, embedded_in_core, 3d_glow, script_logo]
-    role_description: >-
-      A premium idol lightstick on pure black at a 45-degree right-facing hero
-      angle. The lamp head is a purple-and-gold heart-frame power core
-      surrounded by rounded dragon-scale relief, yellow lightning bolts, and
-      violet electric arcs. The handle reads like a fantasy empire scepter,
-      with a stylized dragon-head bottom node, curled horn details, and
-      crystalline purple raised panels. Palette is royal purple / electric yellow /
-      gold / black. Short Latin text is embedded in the central dark-purple
-      core with glowing gold script typography. This image contributes:
-      dragon-scale relief wrapped around a heart lamp head,
-      lightning-bolt silhouette extensions,
-      purple-gold royal fantasy mood,
-      scepter-like vertical proportion with dragon-head bottom detail.
-
-  - id: cap_nameplate_plush
-    image: crown prop.jpg
-    prompt: crown prop.txt
-    quality: strong
-    fallback_safe: true
-    notes: "红色棒球帽 + Xoliza 发光灯牌 + 蓝色布艺手柄;适合帽子/俱乐部/俏皮复古"
-    tags:
-      shape: [baseball_cap, hat, nameplate, rounded_handle, soft_blocky_silhouette]
-      color: [red, crimson_red, blue, royal_blue, warm_yellow_glow, gold]
-      material: [plush_fabric, stitched_textile, soft_emissive_panel, velvet_surface, velvet_flock, padded_trim]
-      vibe: [playful_retro, cute_collectible, soft_tactile, bright_friendly, idol_support]
-      text: [latin, short, embedded_lettering, 3d_glow, rounded_wordmark]
-    role_description: >-
-      A premium idol lightstick on pure black in a full-product 45-degree
-      right-facing view. The whole lightstick is rotated as one object so the
-      front of the lamp head, right-side thickness, and handle side are all
-      visible. The lamp head is a red baseball cap topper with a glowing
-      nameplate nested under the brim, integrated as one playful plush
-      product rather than separated props. Palette is red / royal blue /
-      warm yellow glow / gold. Short Latin text is embedded in the nameplate
-      with rounded retro cartoon lettering. This image contributes:
-      baseball-cap lamp-head silhouette,
-      embedded nameplate under a brim,
-      stitched plush/fabric material language,
-      bright friendly retro collectible mood.
-
-  - id: melon_kawaii_vine
-    image: melon.jpg
-    prompt: melon.txt
-    quality: strong
-    fallback_safe: true
-    notes: "日系蜜瓜 + 叶片包裹 + 藤蔓手柄;水果甜系通用 reference"
-    tags:
-      shape: [melon, fruit_cluster, fruit, food, leaf, vine, round_bulb_top, organic_curves]
-      color: [melon_green, melon_yellow, green, light_green, leaf_green, cream_white, warm_golden_yellow]
-      material: [translucent_resin, frosted_acrylic, soft_enamel, satin_finish, subtle_fiber_texture]
-      vibe: [japanese_cute, fresh, healing, sweet, playful, sweet_soft, lightweight, idol_support]
-      text: [non_latin, japanese, short, embedded_in_core, 3d_glow, rounded_logo]
-    role_description: >-
-      A premium idol lightstick on pure black in a full-product 45-degree
-      right-facing view. The whole lightstick is rotated as one object so the
-      front of the lamp head, right-side thickness, and handle side are all
-      visible. The lamp head is a round melon bulb with a clear melon-rind
-      texture border, soft green leaves cradling the sides, and a vine-like
-      handle. Non-Latin Japanese text is embedded in the central melon core
-      with rounded plush-soft 3D lettering. Palette is melon yellow / light
-      green / cream white / warm golden yellow. This image contributes:
-      melon fruit lamp-head silhouette,
-      leaf cradle and vine handle structure,
-      fresh healing Japanese cute mood,
-      readable non-Latin text inside a fruit core.
-
-  - id: potato_disco_toy
-    image: photato.png.jpg
-    prompt: photato.png.txt
-    quality: strong
-    fallback_safe: true
-    notes: "土豆头像 + Spud Club 字标 + disco 复古玩具感"
-    tags:
-      shape: [potato, vegetable, food, mascot, rounded_potato_head, face, ring_orbit_detail]
-      color: [potato_brown, earth_tan, neon_pink, neon_blue, purple, cream_yellow]
-      material: [matte_clay, ceramic_texture, translucent_acrylic, translucent_resin, soft_enamel, rubber_grip]
-      vibe: [retro_toy, disco_pop, playful, collectible, designer_toy, playful_collectible, handcrafted, whimsical, idol_support]
-      text: [latin, short, script_wordmark, embedded_logo, soft_neon_outline]
-    role_description: >-
-      A premium idol lightstick on pure black in a full-product 45-degree
-      right-facing view. The whole lightstick is rotated as one object so the
-      front of the lamp head, right-side thickness, and handle side are all
-      visible. The lamp head is a rounded potato mascot head with a centered
-      short Latin wordmark, playful facial energy, clay-like potato skin
-      texture, and small disco-pop orbit details. Palette is potato brown /
-      earth tan / neon pink / neon blue / purple / cream yellow. This image
-      contributes:
-      rounded potato mascot lamp-head shape,
-      matte clay and ceramic potato-skin texture,
-      playful retro toy and disco mood,
-      short script wordmark integrated into a mascot face.
-
-  - id: nova_fox_moon
-    image: Nova_Fox_Core.png
-    prompt: Nova_Fox_Core.txt
-    quality: strong
-    fallback_safe: true
-    notes: "银黑月狐 + 新月护片 + Moon Crew;适合狐面/月光/冷艳梦幻"
-    tags:
-      shape: [fox, animal, mask, crescent, moon, ribbon, mascot, symmetric]
-      color: [purple, lavender, silver, smoke_gray, black, pearl]
-      material: [translucent_resin, pearlescent_lacquer, crystal_core, metallic_trim]
-      vibe: [dreamy, elegant, mysterious, refined, idol_support, cool]
-      text: [latin, short, embedded_in_core, 3d_glow, rounded_logo]
-    role_description: >-
-      A premium idol lightstick on pure black in a full-product 45-degree
-      right-facing view. The lamp head reads as a moon-fox mask: raised ears,
-      sweeping cheek plates, crescent arcs, ribbon-tail curves, and a solid
-      gem-like center. Palette is lavender purple / smoke gray / silver /
-      pearl. Short Latin text is embedded in the central core with soft
-      moonlit glow. This image contributes:
-      fox-mask and crescent-moon silhouette,
-      elegant silver-purple translucent material language,
-      refined fantasy mascot mood,
-      readable short Latin text inside a solid core.
-
-  - id: thunder_arcade_bolt
-    image: Thunder_Arcade_Core.png
-    prompt: Thunder_Arcade_Core.txt
-    quality: strong
-    fallback_safe: true
-    notes: "电蓝闪电 + 街机按钮 + Bolt Team;适合电竞/闪电/街机"
-    tags:
-      shape: [electric, lightning, star, arcade_button, rounded_bolt, mascot]
-      color: [electric_blue, blue, yellow, black, white, high_contrast]
-      material: [glossy_resin, translucent_jelly, soft_enamel, frosted_acrylic]
-      vibe: [playful, energetic, battle, arcade, youthful, idol_support]
-      text: [latin, short, embedded_in_core, 3d_glow, rounded_logo]
-    role_description: >-
-      A premium idol lightstick on pure black in a full-product 45-degree
-      right-facing view. The lamp head is a rounded lightning-bolt / arcade
-      badge form with toy-like blue resin, yellow button nodes, and a dark
-      central display core. Palette is electric blue / yellow / black / white.
-      Short Latin text is embedded in the center with bright arcade-logo glow.
-      This image contributes:
-      rounded lightning and arcade-button silhouette,
-      high-saturation blue-yellow game palette,
-      glossy toy-resin material,
-      energetic esports / arcade mood.
-
-  - id: star_run_furry_orbit
-    image: Star_Run.png
-    prompt: Star_Run.txt
-    quality: strong
-    fallback_safe: true
-    notes: "粉紫星形 + 月弧轨道 + 粉色毛绒;适合星星/轨道/月光/梦幻"
-    tags:
-      shape: [star, crescent, orbit, moon, hair, fur, soft_texture, symmetric]
-      color: [pink, hot_pink, lavender, blue, purple, pearl_white]
-      material: [translucent_resin, crystal_core, fiber_hair, velvet_flock, glossy_resin, pearl_coating]
-      vibe: [dreamy, glamorous, sweet, cosmic, idol_support, soft]
-      text: [latin, short, embedded_in_core, 3d_glow, futuristic_logo]
-    role_description: >-
-      A premium idol lightstick on pure black in a full-product 45-degree
-      right-facing view. The lamp head is a translucent pink star with crescent
-      and orbit arcs, a soft pink fur halo, tiny star crystals, and a blue
-      cosmic handle. Palette is hot pink / lavender / blue / pearl white.
-      Short Latin text is centered in the glowing star core. This image
-      contributes:
-      star lamp-head silhouette with moon/orbit extensions,
-      soft fur as a tactile background texture,
-      pink-blue cosmic idol palette,
-      clean futuristic short Latin text.
-
-  - id: globe_nationteam
-    image: Globe_Nationteam.png
-    prompt: Globe_Nationteam.txt
-    quality: strong
-    fallback_safe: true
-    notes: "地球徽章 + 黄绿环冠 + Nationteam;适合社群/全球/广播身份"
-    tags:
-      shape: [globe, orbit, ring, badge, round_bulb_top, sphere]
-      color: [yellow, green, black, gold, warm_yellow_glow]
-      material: [translucent_resin, glossy_resin, brushed_metal, crystal_core]
-      vibe: [communal, uplifting, friendly, broadcast_identity, badge_like, idol_support]
-      text: [latin, long, embedded_in_core, 3d_glow, rounded_wordmark]
-    role_description: >-
-      A premium idol lightstick on pure black in a full-product 45-degree
-      right-facing view. The lamp head is a globe-like spherical badge wrapped
-      by yellow-green orbit rings, translucent resin arcs, and a compact
-      yellow handle with small world-emblem details. Palette is yellow / green
-      / black / gold. Long Latin text is embedded across the globe core with
-      warm glowing rounded lettering. This image contributes:
-      globe and orbit-ring lamp-head structure,
-      community / broadcast badge identity,
-      yellow-green high-contrast resin palette,
-      readable long Latin text on a spherical core.
-
-  - id: cherry_turtle_jinas
-    image: Cherry_Turtle_JINAS.png
-    prompt: Cherry_Turtle_JINAS.txt
-    quality: strong
-    fallback_safe: true
-    notes: "樱桃 + 龟壳 + JINA's;甜系果冻 mascot"
-    tags:
-      shape: [mascot, fruit_cluster, fruit, food, cherry, shell, turtle, animal, rounded_dome, dual_motif]
-      color: [cherry_red, pink, cream, mint_green, pistachio, pearl_white]
-      material: [jelly_resin, cream_enamel, plush_fabric, translucent_resin, pearlescent_trim]
-      vibe: [cute, sweet, playful, healing, soft, idol_support, designer_toy]
-      text: [latin, short, embedded_in_core, 3d_glow, rounded_logo]
-    role_description: >-
-      A premium idol lightstick on pure black in a full-product 45-degree
-      right-facing view. The lamp head fuses cherry domes, a pink turtle-shell
-      center, green shell panels, soft side pads, and vine details into one
-      sweet mascot silhouette. Palette is cherry red / pink / cream / mint
-      green. Short Latin text is embedded in the translucent pink shell core.
-      This image contributes:
-      cherry plus turtle-shell dual-motif fusion,
-      cute jelly-resin and soft plush contrast,
-      sweet healing mascot mood,
-      short Latin text inside a rounded shell core.
-
-  - id: raven_trlinda_core
-    image: Raven_TrLinda.png
-    prompt: Raven_TrLinda.txt
-    quality: strong
-    notes: "乌鸦羽翼 + 电紫闪电 + TrLinda;适合暗羽/速度/战斗感"
-    tags:
-      shape: [raven, crow, bird, animal, wing, feather, electric, lightning, spike]
-      color: [electric_purple, purple, black, cool_white, neon_blue]
-      material: [blown_glass, leather_wrap, crystal_core, metallic_trim, feather]
-      vibe: [sleek, focused, cool, mysterious, battle, protective, idol_support]
-      text: [latin, long, embedded_in_core, 3d_glow, bold_logo]
-    role_description: >-
-      A premium idol lightstick on pure black in a full-product 45-degree
-      right-facing view. The lamp head is a black-purple raven crest with
-      layered wings, a sharp bird head, lightning shards, and a glossy purple
-      core above a black leather-wrapped handle. Palette is electric purple /
-      black / cool white. Long Latin text is embedded in the central core with
-      strong purple glow. This image contributes:
-      raven/wing silhouette with lightning accents,
-      dark leather plus glossy crystal material contrast,
-      sleek protective battle mood,
-      readable long Latin text in a dark central core.
-
-  - id: hat_mv_silver
-    image: Hat_MV.png
-    prompt: Hat_MV.txt
-    quality: strong
-    notes: "宽檐礼帽 + 银红翼片 + MV;适合帽饰/复古舞台/轻奢"
-    tags:
-      shape: [hat, brim, wing, heart, feather, crest, symmetric]
-      color: [silver, red, warm_white, champagne, charcoal_black]
-      material: [mirror_metal, blown_glass, leather_wrap, crystal_core, enamel]
-      vibe: [elegant, glamorous, vintage_stage, refined, bold, idol_support]
-      text: [latin, short, embedded_in_core, 3d_glow, serif_logo]
-    role_description: >-
-      A premium idol lightstick on pure black in a full-product 45-degree
-      right-facing view. The lamp head combines a silver top hat, a red heart
-      core, sweeping wing plates, feather crest details, and a glass handle
-      with warm sparkle. Palette is silver / red / warm white / champagne.
-      Short Latin text is embedded in the heart core with bright serif glow.
-      This image contributes:
-      hat-brim and winged-heart lamp-head structure,
-      polished silver/red luxury palette,
-      vintage stage and formal emblem mood,
-      crisp short Latin initials in a central core.
-
-  - id: bird_gothic_trlinda
-    image: bird.png
-    prompt: bird.txt
-    quality: strong
-    notes: "哥特乌鸦环抱 + 粉紫星光 + TrLinda;适合暗黑羽翼/哥特文字"
-    tags:
-      shape: [raven, crow, bird, animal, wing, feather, orbit, gothic_frame]
-      color: [black, purple, pink, rose_pink, cool_white]
-      material: [feather, translucent_crystal, glossy_resin, metallic_trim]
-      vibe: [gothic, mysterious, dramatic, protective, glamorous, idol_support]
-      text: [latin, long, embedded_wordmark, 3d_glow, gothic_logo]
-    role_description: >-
-      A premium idol lightstick on pure black in a front-biased product view.
-      The lamp head is a dark raven curled around a pink-purple glowing core
-      with layered feathers, spark particles, and a slim glowing handle.
-      Palette is black / purple / rose pink / cool white. Long Latin text uses
-      gothic lettering across the center. This image contributes:
-      raven curled around a core silhouette,
-      gothic long-wordmark treatment,
-      feather texture and pink star-glow contrast,
-      dramatic dark idol mood.
-
-  - id: cat_cloud_maozai
-    image: cat1.png
-    prompt: cat1.txt
-    quality: strong
-    fallback_safe: true
-    notes: "布偶猫趴云朵字牌 + 茂仔;自然麻绳藤蔓手柄"
-    tags:
-      shape: [cat, animal, mascot, cloud_nameplate, paw, vine, rounded_handle]
-      color: [cream, mint_green, warm_brown, tan, soft_yellow]
-      material: [plush_fabric, fiber_hair, rope_wrap, soft_emissive_panel, matte_fabric]
-      vibe: [cute, healing, warm, natural, playful, soft, idol_support]
-      text: [non_latin, chinese, short, embedded_lettering, plush_soft]
-    role_description: >-
-      A premium idol lightstick on pure black in a full-product 45-degree
-      right-facing view. A fluffy ragdoll-style cat lounges on a pale green
-      cloud nameplate above a rope-wrapped handle with vines and a small
-      charm. Palette is cream / mint green / warm brown / soft yellow.
-      Short Chinese text is embedded as thick soft lettering in the nameplate.
-      This image contributes:
-      realistic plush cat mascot perched on a nameplate,
-      natural rope and vine handle language,
-      warm healing pet-companion mood,
-      readable Chinese plush lettering.
-
-  - id: cat_omamori_maozai
-    image: cat2.png
-    prompt: cat2.txt
-    quality: strong
-    fallback_safe: true
-    notes: "猫咪御守布艺 + 茂仔;绒布流苏和花朵"
-    tags:
-      shape: [cat, animal, mascot, omamori, charm, tassel, flower, rounded_rectangle]
-      color: [mint_green, cream, pastel_pink, pastel_yellow, warm_brown]
-      material: [plush_fabric, stitched_textile, embroidery, tassel, soft_fiber]
-      vibe: [japanese_cute, healing, soft, blessing, gentle, idol_support]
-      text: [non_latin, chinese, short, embroidered_text, plush_soft]
-    role_description: >-
-      A premium idol lightstick on pure black in a full-product 45-degree
-      right-facing view. The lamp head is a soft omamori-like charm with a
-      fluffy cat face, embroidered flowers, bow knots, tassel, and a plush
-      green handle. Palette is mint green / cream / pastel pink / warm brown.
-      Short Chinese text is stitched into the charm front. This image
-      contributes:
-      omamori charm lamp-head silhouette,
-      embroidered plush and tassel material language,
-      gentle blessing / healing mood,
-      readable Chinese stitched text.
-
-  - id: arabic_purple_calligraphy
-    image: character.jpg
-    prompt: character.txt
-    quality: strong
-    notes: "紫色阿拉伯书法 + 水晶火焰丝带;适合异域文字/梦幻紫"
-    tags:
-      shape: [calligraphy, flame, ribbon, crescent, flowing_decoration, orbit]
-      color: [purple, lavender, rose, pink, pearl, champagne]
-      material: [translucent_resin, crystal_core, pearlescent_lacquer, metallic_trim]
-      vibe: [romantic, exotic, dreamy, elegant, mysterious, idol_support]
-      text: [non_latin, arabic, calligraphy, embedded_wordmark, 3d_glow]
-    role_description: >-
-      A premium idol lightstick on pure black in a full-product 45-degree
-      right-facing view. The lamp head is built from translucent purple ribbon
-      arcs, flame-like calligraphy curves, a warm central crystal, and a slim
-      purple handle with moon and gem details. Palette is lavender / rose
-      purple / pearl / champagne. Arabic calligraphic text forms the visual
-      center. This image contributes:
-      non-Latin Arabic calligraphy as the lamp-head structure,
-      flowing ribbon and flame-like purple silhouette,
-      translucent crystal material,
-      exotic romantic night-stage mood.
-
-  - id: rooster_patrona
-    image: chiken.png
-    prompt: chiken.txt
-    quality: strong
-    notes: "公鸡侧身 + 暖橙晶核 + Patrona;适合动物徽章/明亮复古"
-    tags:
-      shape: [rooster, bird, animal, feather, crest, mascot, round_bulb_top]
-      color: [coral_red, orange, cream, yellow, warm_white, gold]
-      material: [glossy_resin, translucent_crystal, soft_enamel, pearlescent_lacquer]
-      vibe: [warm, playful, friendly, retro, bright, idol_support]
-      text: [latin, short, embedded_in_core, 3d_glow, script_wordmark]
-    role_description: >-
-      A premium idol lightstick on pure black in a full-product 45-degree
-      right-facing view. The lamp head is a rounded rooster silhouette with
-      coral crest, orange tail feathers, a faceted glowing belly core, and a
-      cream handle with wheat-like relief. Palette is coral red / orange /
-      cream / warm gold. Short Latin script text is embedded in the belly
-      crystal. This image contributes:
-      rooster mascot lamp-head silhouette,
-      warm retro orange-cream palette,
-      glossy toy-resin and crystal core material,
-      friendly short script wordmark.
-
-  - id: eagle_trlinda_plush
-    image: eagle.png
-    prompt: eagle.txt
-    quality: strong
-    notes: "紫色鹰翼毛绒 + TrLinda;适合羽翼/鹰徽/强守护感"
-    tags:
-      shape: [eagle, bird, animal, wing, feather, mascot, symmetric]
-      color: [purple, black, white, gold, silver]
-      material: [feather, plush_fabric, translucent_resin, metallic_trim]
-      vibe: [protective, powerful, dramatic, bold, idol_support]
-      text: [latin, long, embroidered_text, 3d_glow, arched_wordmark]
-    role_description: >-
-      A premium idol lightstick on pure black in a front-facing product view.
-      The lamp head is a purple eagle mascot with raised wings, a white eagle
-      head, plush feather texture, and a short purple handle. Palette is deep
-      purple / black / white / gold. Long Latin text is arched across the
-      chest in soft raised lettering. This image contributes:
-      eagle-wing mascot silhouette,
-      plush feather material and animal-emblem mood,
-      strong protective identity,
-      arched long Latin wordmark.
-
-  - id: iron_john_badge
-    image: iron.jpg
-    prompt: iron.txt
-    quality: strong
-    notes: "深蓝银徽章 + 手铐盾牌 + JOHN;适合警探/秩序/硬朗金属"
-    tags:
-      shape: [shield, badge, fleur_de_lis, handcuff, armor, vertical_scepter]
-      color: [navy_blue, silver, black, cool_white, metal_gray]
-      material: [brushed_metal, enamel, hard_plastic, clear_acrylic, leather_wrap]
-      vibe: [orderly, strong, cool, authoritative, refined, idol_support]
-      text: [latin, short, embedded_in_core, 3d_glow, gothic_logo]
-    role_description: >-
-      A premium idol lightstick on pure black in a centered product view. The
-      lamp head is a police / detective-style shield badge with fleur-de-lis,
-      handcuff rings, rivets, and a navy handle with metal collars. Palette is
-      navy blue / silver / black / cool white. Short Latin text is embedded in
-      a shield-shaped glowing nameplate. This image contributes:
-      shield badge and handcuff structural language,
-      hard metal / enamel equipment finish,
-      orderly authoritative mood,
-      short gothic Latin lettering.
-
-  - id: pink_queen_gigi
-    image: pink.png
-    prompt: pink.txt
-    quality: strong
-    notes: "粉色女王皇冠 + Gigi;适合皇冠/甜酷/舞台中心"
-    tags:
-      shape: [crown, queen, heart, gem, scepter, symmetric]
-      color: [hot_pink, pink, pearl_white, silver, black]
-      material: [mirror_metal, translucent_crystal, glossy_resin, pearlescent_lacquer]
-      vibe: [glamorous, sweet_cool, confident, bright, idol_support]
-      text: [latin, short, embedded_in_core, 3d_glow, rounded_wordmark]
-    role_description: >-
-      A premium idol lightstick on pure black in a full-product 45-degree
-      right-facing view. The lamp head is a hot-pink crown with crystal panels,
-      a heart core, ring nameplate, and a glossy pink-white scepter handle.
-      Palette is hot pink / pale pink / pearl white / silver / black. Short
-      Latin text is centered in the heart core with bright rounded glow. This
-      image contributes:
-      queen crown and heart lamp-head silhouette,
-      pink crystal / mirror-metal luxury finish,
-      confident sweet-cool idol mood,
-      short rounded Latin wordmark.
-
-  - id: purple_wave_amen
-    image: purprle.png
-    prompt: purprle.txt
-    quality: strong
-    fallback_safe: true
-    notes: "紫色水波花瓣 + A.men';适合梦幻水晶/月光/温柔紫"
-    tags:
-      shape: [flower, wave, crescent, crystal, flowing_decoration, rounded_bulb_top]
-      color: [purple, lavender, pearl_white, silver, deep_purple]
-      material: [translucent_resin, crystal_core, pearlescent_lacquer, glossy_resin]
-      vibe: [dreamy, gentle, romantic, elegant, soft, idol_support]
-      text: [latin, short, embedded_in_core, 3d_glow, script_wordmark]
-    role_description: >-
-      A premium idol lightstick on pure black in a full-product 45-degree
-      right-facing view. The lamp head is a purple flower/wave crystal ring
-      with pearly white edges, hanging crystal shards, a deep violet central
-      core, and a purple handle with moon details. Palette is lavender /
-      deep purple / pearl white / silver. Short Latin script text is embedded
-      in the center. This image contributes:
-      flowing flower-wave lamp-head silhouette,
-      translucent purple crystal material,
-      gentle moonlit romantic mood,
-      short script Latin text in a central core.
-
-  - id: red_panda_soft_mascot
-    image: red_panda.png
-    prompt: red_panda.txt
-    quality: strong
-    fallback_safe: true
-    notes: "小熊猫 + 月牙抱牌 + 奶油黄软绒;补充动物/软萌/异形边界"
-    tags:
-      shape: [red_panda, animal, mascot, crescent, side_swept, charm_cluster]
-      color: [butter_yellow, sky_blue, soft_white, caramel_orange, brown]
-      material: [plush_fabric, velvet_flock, soft_vinyl, matte_enamel, translucent_resin]
-      vibe: [cute, soft, healing, playful, designer_toy, idol_support]
-      text: [latin, short, embedded_wordmark, high_contrast, 3d_glow]
-    role_description: >-
-      A soft collectible idol lightstick on pure black in a full-product
-      45-degree right-facing view. The lamp head uses a crescent red-panda
-      mascot silhouette with ears, fluffy tail, flower/star charms, and a
-      cream-yellow body rather than a circular badge. High-contrast short
-      Latin text is embedded in the central plush-resin face. This image
-      contributes:
-      soft animal mascot silhouette,
-      crescent side-swept non-round lamp head,
-      fuzzy plush / soft vinyl material,
-      readable high-contrast rounded wordmark.
-
-  - id: alpaca_cloud_plush
-    image: alpaca.png
-    prompt: alpaca.txt
-    quality: strong
-    fallback_safe: true
-    notes: "羊驼云朵 + 短绒软胶 + 天空蓝点缀;补充治愈宠物类"
-    tags:
-      shape: [alpaca, animal, mascot, cloud_nameplate, asymmetric_vertical, soft_body]
-      color: [cream, butter_yellow, sky_blue, soft_white, warm_gold]
-      material: [plush_fabric, velvet_flock, silicone, soft_vinyl, translucent_resin]
-      vibe: [cute, healing, fluffy, gentle, soft, idol_support]
-      text: [latin, short, embedded_wordmark, high_contrast, plush_soft]
-    role_description: >-
-      A fluffy alpaca-themed idol lightstick on pure black at a full-product
-      45-degree right-facing angle. The lamp head is an asymmetric vertical
-      alpaca mascot perched on a soft cloud nameplate with small transparent
-      blue fins and rounded toy proportions. This image contributes:
-      fluffy alpaca pet-companion mood,
-      cloud nameplate lamp-head structure,
-      soft flock / silicone material language,
-      clean short Latin wordmark inside a plush surface.
-
-  - id: donut_whale_dark_sweet
-    image: donut_whale.png
-    prompt: donut_whale.txt
-    quality: strong
-    notes: "甜甜圈鲸鱼 + 深紫糖霜 + 小鳍异形;补充食品动物融合"
-    tags:
-      shape: [whale, animal, donut, food, dessert, food_animal_fusion, fin, shield_body, non_round]
-      color: [graphite, violet, silver, cream, dark_purple]
-      material: [frosting_resin, jelly_resin, velvet_flock, soft_vinyl, translucent_resin, matte_enamel]
-      vibe: [cute, dark_sweet, playful, surreal, designer_toy, idol_support]
-      text: [latin, long, embedded_wordmark, high_contrast, candy_emboss]
-    role_description: >-
-      A dark-sweet donut whale idol lightstick on pure black in a 45-degree
-      right-facing product view. The lamp head fuses a rounded whale body,
-      donut frosting rim, tail fins, flower cap, and a deep violet central
-      text surface. This image contributes:
-      food-animal fusion silhouette,
-      dark graphite / violet sweet-toy palette,
-      frosting resin and flocked soft texture,
-      long readable Latin wordmark on a non-round core.
-
-  - id: pillow_ghost_squishy
-    image: pillow_ghost.png
-    prompt: pillow_ghost.txt
-    quality: strong
-    fallback_safe: true
-    notes: "枕头幽灵 + 薰衣草软垫 + 冰蓝透明薄翼;补充软糯幻想类"
-    tags:
-      shape: [ghost, pillow, squishy, spiral_crest, wing, non_round]
-      color: [lavender, icy_blue, pearl_white, pale_purple]
-      material: [silicone, velvet_flock, pearlescent_resin, translucent_resin, squishy_foam]
-      vibe: [cute, dreamy, soft, whimsical, gentle, idol_support]
-      text: [latin, long, embedded_wordmark, high_contrast, plush_soft]
-    role_description: >-
-      A squishy pillow ghost idol lightstick on pure black at a full-product
-      45-degree right-facing angle. The lamp head is a puffy lavender ghost
-      cushion with folded corners, translucent icy fins, and a candy-stick
-      handle. This image contributes:
-      pillow-soft ghost silhouette,
-      lavender / icy blue gentle palette,
-      silicone cushion and velvet flock material,
-      readable white-purple wordmark embedded in a soft body.
-
-  - id: rhino_sport_mascot
-    image: rhino.png
-    prompt: rhino.txt
-    quality: strong
-    notes: "橄榄球犀牛 + 蜂蜜棕运动皮革;补充球类/动物运动融合"
-    tags:
-      shape: [rhino, rugby_ball, animal, sport_ball, sport, long_object_body, horn]
-      color: [honey_amber, brown, vanilla, chocolate]
-      material: [matte_leather, soft_vinyl, suede_texture, translucent_resin, matte_enamel]
-      vibe: [sporty, cute_powerful, warm, playful, collectible_toy, idol_support]
-      text: [latin, long, embedded_wordmark, high_contrast, athletic_logo]
-    role_description: >-
-      A rugby rhino idol lightstick on pure black in a 45-degree right-facing
-      product view. The lamp head combines an elongated rugby-ball body,
-      rhino horn, ears, laces, and honey-brown soft sport material. This image
-      contributes:
-      sports ball plus animal mascot fusion,
-      long non-round lamp-head silhouette,
-      soft leather / vinyl sport texture,
-      high-contrast athletic Latin wordmark.
-
-  - id: snail_galaxy_charm
-    image: snail.png
-    prompt: snail.txt
-    quality: strong
-    fallback_safe: true
-    notes: "星河蜗牛 + 鼠尾草绿 + 螺旋壳叠层;补充慢萌奇想类"
-    tags:
-      shape: [snail, animal, galaxy, shell, spiral, halo_arc, stacked_charm]
-      color: [sage_green, peach, sand_cream, pearl_white]
-      material: [pearlescent_lacquer, soft_vinyl, jelly_resin, velvet_flock, translucent_resin]
-      vibe: [dreamy, gentle, cute, whimsical, soft, idol_support]
-      text: [latin, long, embedded_wordmark, high_contrast, 3d_glow]
-    role_description: >-
-      A galaxy snail idol lightstick on pure black at a full-product 45-degree
-      right-facing angle. The lamp head is a stacked charm tower with a spiral
-      snail shell, halo arc, small moons, and a sage-green soft body. This
-      image contributes:
-      snail shell spiral silhouette,
-      gentle sage / peach dream palette,
-      pearlescent jelly and soft vinyl materials,
-      long Latin wordmark following a rounded shell core.
-
-  - id: pocket_watch_vintage
-    image: pocket_watch.png
-    prompt: pocket_watch.txt
-    quality: strong
-    notes: "复古怀表 + 酒红海军蓝 + 倾斜图腾;补充物件类异形"
-    tags:
-      shape: [pocket_watch, clock, object_body, tilted_capsule, chain, moon_chip]
-      color: [red, cream, navy, antique_gold, pearl]
-      material: [enamel, pearlescent_resin, soft_leather, brushed_metal_trim]
-      vibe: [vintage, magical, elegant, collectible, stage, idol_support]
-      text: [latin, long, embedded_wordmark, high_contrast, vintage_logo]
-    role_description: >-
-      A vintage pocket-watch idol lightstick on pure black in a full-product
-      45-degree right-facing view. The lamp head is a tilted capsule totem
-      built from a watch case, crown, moon chip, chain links, and a red/navy
-      stage palette. This image contributes:
-      object-led non-round watch silhouette,
-      vintage enamel and soft leather treatment,
-      red / cream / navy contrast,
-      readable long Latin wordmark in a watch face.
-
-  - id: black_rabbit_gothic_soft
-    image: black_rabbit.png
-    prompt: black_rabbit.txt
-    quality: strong
-    notes: "黑兔 + 红黑暗甜 + 长耳异形;补充哥特软萌动物"
-    tags:
-      shape: [rabbit, animal, mascot, long_ears, asymmetric_vertical, ribbon]
-      color: [black, cherry_red, cream, gray_purple, silver]
-      material: [velvet_flock, plush_fabric, soft_vinyl, ribbon_textile, translucent_resin]
-      vibe: [gothic_cute, dark_sweet, playful, soft, dramatic, idol_support]
-      text: [latin, long, embedded_wordmark, high_contrast, 3d_glow]
-    role_description: >-
-      A black rabbit idol lightstick on pure black at a full-product
-      45-degree right-facing angle. The lamp head uses long rabbit ears,
-      dark plush surfaces, red ribbon accents, and a central high-contrast
-      text face. This image contributes:
-      dark cute animal mascot silhouette,
-      long-ear non-round lamp-head structure,
-      black velvet flock and red soft-vinyl contrast,
-      readable cream wordmark on a dark body.
-
-  - id: gummy_frog_jelly
-    image: gummy_frog.png
-    prompt: gummy_frog.txt
-    quality: strong
-    fallback_safe: true
-    notes: "软糖青蛙 + 深紫果冻 + 凸眼双瓣;补充Q弹材质"
-    tags:
-      shape: [frog, animal, gummy, double_lobed, eye_bumps, bat_wing]
-      color: [deep_purple, smoke_black, moon_silver, candy_purple]
-      material: [jelly_resin, silicone, soft_vinyl, translucent_resin, matte_enamel]
-      vibe: [cute, quirky, gummy, night_glow, playful, idol_support]
-      text: [latin, long, embedded_wordmark, high_contrast, candy_emboss]
-    role_description: >-
-      A gummy frog idol lightstick on pure black in a 45-degree right-facing
-      product view. The lamp head has two raised frog eyes, a squishy purple
-      body, small wing-like side tabs, and glossy jelly thickness. This image
-      contributes:
-      gummy frog double-lobed silhouette,
-      dark purple soft candy material,
-      playful strange-cute mood,
-      bright high-contrast wordmark embedded in jelly.
-
-  - id: goose_moon
-    image: goose.png
-    prompt: goose.txt
-    quality: strong
-    notes: "月牙鹅 + 海军蓝银白 + 清爽侧扫轮廓;补充水鸟动物"
-    tags:
-      shape: [goose, bird, animal, crescent, neck_curve, moon, side_swept]
-      color: [navy_blue, moon_silver, cool_white, icy_blue, warm_yellow]
-      material: [soft_vinyl, silicone, translucent_resin, pearlescent_lacquer]
-      vibe: [clean, playful, sporty, cute, fresh, idol_support]
-      text: [latin, short, embedded_wordmark, high_contrast, 3d_glow]
-    role_description: >-
-      A moon-goose idol lightstick on pure black at a full-product 45-degree
-      right-facing angle. The lamp head turns a goose neck and body into a
-      blue-silver crescent with wing plates, star details, and a compact
-      handle. This image contributes:
-      bird neck crescent silhouette,
-      crisp navy / silver contrast,
-      soft vinyl with translucent icy accents,
-      short readable Latin wordmark.
-
-  - id: crab_soft_shell
-    image: crab.png
-    prompt: crab.txt
-    quality: strong
-    notes: "红蟹 + 双钳 + 红蓝高对比;补充海洋动物软胶"
-    tags:
-      shape: [crab, animal, sea_animal, claws, shell, side_swept, charm_cluster]
-      color: [red, navy_blue, electric_blue, silver_white]
-      material: [soft_vinyl, jelly_resin, matte_enamel, textile_wrap]
-      vibe: [playful, energetic, cute, ocean, bright, idol_support]
-      text: [latin, short, embedded_wordmark, high_contrast, 3d_glow]
-    role_description: >-
-      A red crab idol lightstick on pure black in a 45-degree right-facing
-      product view. The lamp head is a rounded crab shell with raised claws,
-      blue star droplets, and a red-blue wrapped handle. This image
-      contributes:
-      crab claw non-round silhouette,
-      bright red / blue animal palette,
-      soft shell vinyl and jelly resin texture,
-      high-contrast short Latin wordmark.
-
-  - id: billiard_eight_ball_club
-    image: billiard.png
-    prompt: billiard.txt
-    quality: strong
-    notes: "八号球俱乐部 + 球杆 + 蜂蜜棕皮革;补充球类运动物件"
-    tags:
-      shape: [billiard_ball, eight_ball, sport_ball, sport, cue, club_badge, object_body]
-      color: [honey_amber, brown, vanilla, black, antique_gold]
-      material: [phenolic_resin, soft_leather, matte_enamel, brushed_metal_trim]
-      vibe: [vintage_sport, club, warm, collectible, playful, idol_support]
-      text: [latin, long, embedded_wordmark, high_contrast, vintage_logo]
-    role_description: >-
-      A billiard-club idol lightstick on pure black at a full-product
-      45-degree right-facing angle. The lamp head combines an eight ball,
-      crossed cues, warm brown club trims, and a leather-wrapped handle rather
-      than a simple round ball badge. This image contributes:
-      sport object fusion,
-      billiard ball and cue silhouette language,
-      warm leather / resin material,
-      readable long vintage Latin wordmark.
-
-  - id: frog_night_moon
-    image: frog.png
-    prompt: frog.txt
-    quality: strong
-    fallback_safe: true
-    notes: "深蓝星月蛙 + 软弹夜光;补充青蛙动物与冷色高对比"
-    tags:
-      shape: [frog, animal, crescent, star, moon, side_swept]
-      color: [navy_blue, moon_silver, electric_blue, cool_white]
-      material: [soft_vinyl, silicone, translucent_resin, matte_enamel]
-      vibe: [cute, night_glow, playful, sporty, soft, idol_support]
-      text: [latin, short, embedded_wordmark, high_contrast, 3d_glow]
-    role_description: >-
-      A night-frog idol lightstick on pure black in a full-product 45-degree
-      right-facing view. The lamp head uses a crescent frog body, raised eyes,
-      star beads, and a navy/electric-blue glowing core. This image
-      contributes:
-      frog plus star-moon silhouette,
-      dark blue soft-vinyl material,
-      sporty cute night mood,
-      short bright wordmark on a dark body.
-
-  - id: duck_dodgeball_sport
-    image: duck.png
-    prompt: duck.txt
-    quality: strong
-    fallback_safe: true
-    notes: "躲避球小鸭 + 阳光黄软胶 + 长形运动主体;补充球类可爱款"
-    tags:
-      shape: [duck, bird, animal, dodgeball, sport_ball, sport, long_object_body, wave]
-      color: [sun_yellow, leaf_green, white, orange]
-      material: [soft_vinyl, matte_rubber, velvet_flock, jelly_resin]
-      vibe: [sporty, bright, cute, playful, friendly, idol_support]
-      text: [latin, long, embedded_wordmark, high_contrast, athletic_logo]
-    role_description: >-
-      A dodgeball duck idol lightstick on pure black at a 45-degree
-      right-facing product angle. The lamp head turns a yellow duck and
-      dodgeball markings into a long soft sport-toy body with green accents.
-      This image contributes:
-      ball-sport animal fusion,
-      long readable product silhouette,
-      soft rubber / vinyl material,
-      bright high-contrast athletic wordmark.
-
-  - id: gecko_tail_handle
-    image: gecko.png
-    prompt: gecko.txt
-    quality: strong
-    notes: "壁虎卷尾即握柄 + 蓝银夜光;补充整棒一体化动物结构"
-    tags:
-      shape: [gecko, lizard, animal, tail_curl, arched_handle, full_body]
-      color: [navy_blue, moon_silver, electric_blue, cool_white]
-      material: [silicone, soft_vinyl, translucent_resin, pearlescent_lacquer]
-      vibe: [agile, night_glow, sporty, cute_cool, playful, idol_support]
-      text: [latin, short, embedded_wordmark, high_contrast, 3d_glow]
-    role_description: >-
-      A gecko idol lightstick on pure black in a full-product 45-degree
-      right-facing view. The gecko body curls around the lamp head while its
-      tail becomes the handle, with suction-pad feet and blue night-glow
-      accents. This image contributes:
-      full-body animal-as-stick structure,
-      tail-as-handle silhouette logic,
-      soft silicone / vinyl texture,
-      bright wordmark inside a dark blue core.
-
-  - id: meerkat_watchful_plush
-    image: meerkat.png
-    prompt: meerkat.txt
-    quality: strong
-    notes: "站立狐獴 + 红奶油海军蓝 + 绒毛条纹;补充竖向小动物"
-    tags:
-      shape: [meerkat, animal, mascot, standing_body, spiral_crest, stripe]
-      color: [red, cream, navy_blue, tan, silver_white]
-      material: [plush_fabric, velvet_flock, soft_vinyl, textile_wrap, matte_enamel]
-      vibe: [cute, alert, warm, playful, soft, idol_support]
-      text: [latin, short, embedded_wordmark, high_contrast, plush_soft]
-    role_description: >-
-      A watchful meerkat idol lightstick on pure black at a 45-degree
-      right-facing product angle. The lamp head is a standing meerkat mascot
-      with rounded ears, stripe body, small wing plates, and a red/navy candy
-      handle. This image contributes:
-      vertical small-animal mascot structure,
-      plush fur and textile stripe material,
-      warm red / cream / navy palette,
-      high-contrast short Latin wordmark.
-
-  - id: churro_wand_dark_sweet
-    image: churro.png
-    prompt: churro.txt
-    quality: strong
-    notes: "吉拿魔杖 + 酒红果酱 + 砂糖颗粒;补充食品魔法道具"
-    tags:
-      shape: [churro, food, dessert, wand, tilted_capsule, dessert_bundle, star]
-      color: [black, wine_red, soft_silver, cocoa_brown, sugar_white]
-      material: [sugar_grain_texture, matte_resin, jelly_resin, soft_vinyl, enamel]
-      vibe: [dark_sweet, magical, dessert, playful, stage, idol_support]
-      text: [latin, long, embedded_wordmark, high_contrast, candy_emboss]
-    role_description: >-
-      A dark-sweet churro wand idol lightstick on pure black in a 45-degree
-      right-facing product view. The lamp head is built from churro sticks,
-      sugar crystals, wine-red jelly droplets, and a compact wand handle.
-      This image contributes:
-      dessert-as-magic-wand silhouette,
-      sugar grain and jelly material cues,
-      black / wine red contrast,
-      readable long candy-style Latin wordmark.
-
-  - id: lychee_pearl_jelly
-    image: lychee.png
-    prompt: lychee.txt
-    quality: strong
-    fallback_safe: true
-    notes: "荔枝珍珠 + 粉白青柠 + 果冻花瓣;补充食品水果软萌"
-    tags:
-      shape: [lychee, pearl, fruit, food, flower_petals, shield_body, leaf]
-      color: [lime, white, bubblegum_pink, pearl, pale_yellow]
-      material: [jelly_resin, pearlescent_resin, velvet_flock, silicone, translucent_resin]
-      vibe: [sweet, fresh, cute, soft, fruity, idol_support]
-      text: [latin, long, embedded_wordmark, high_contrast, candy_emboss]
-    role_description: >-
-      A lychee pearl idol lightstick on pure black at a full-product
-      45-degree right-facing view. The lamp head looks like a peeled lychee
-      with pink soft fruit petals, a pearl-white core, lime leaves, and a
-      slim soft handle. This image contributes:
-      fruit flower-petal lamp-head silhouette,
-      fresh lime / pink / pearl palette,
-      jelly fruit resin and velvet skin texture,
-      long readable candy-style wordmark.
-
-  - id: fire_plush_torch
-    image: fire.jpg
-    prompt: fire.txt
-    quality: strong
-    fallback_safe: true
-    notes: "毛绒火把 + Torch 蓝色刺绣 + 木质握柄;补充火焰/布偶/手作材质"
-    tags:
-      shape: [fire, flame, torch, plush, mascot, soft_texture, handheld_prop]
-      color: [red, orange, yellow, blue, wood_brown, warm]
-      material: [plush_fabric, knitted_textile, embroidery, velvet_flock, wood]
-      vibe: [warm, energetic, playful, cute, handcrafted, idol_support]
-      text: [latin, short, embroidered_text, high_contrast, stitched_wordmark]
-    role_description: >-
-      A plush torch idol lightstick on pure black in a full-product
-      45-degree right-facing view. The lamp head is a rounded fabric flame
-      with red-orange outer fire shapes, a yellow center, blue embroidered
-      short Latin text, two tiny flame mascots, and a real wood handle. This
-      image contributes:
-      soft flame / torch silhouette,
-      plush and knitted textile material,
-      embroidered high-contrast wordmark,
-      warm handcrafted prop identity with a wood grip.
-
-  - id: pilot_mic_aviator
-    image: pilot.jpg
-    prompt: pilot.txt
-    quality: strong
-    notes: "飞行员护目镜 + 麦克风角色 + Gokin 名牌;补充复古播报/航空潮玩"
-    tags:
-      shape: [pilot, aviator, goggles, helmet, microphone, mascot, nameplate]
-      color: [sky_blue, lime, coral, cream, silver, antique_gold]
-      material: [soft_vinyl, plush_fabric, clear_lens, brushed_metal_trim, soft_emissive_panel]
-      vibe: [retro, playful, quirky, aviation, broadcast, idol_support]
-      text: [latin, short, embedded_wordmark, high_contrast, 3d_glow]
-    role_description: >-
-      A playful aviator microphone idol lightstick on pure black at a
-      full-product 45-degree right-facing angle. The lamp head reads as a
-      cute pilot character with goggles, a plush flight cap, microphone grille,
-      coral lips, and a glowing front nameplate. This image contributes:
-      pilot / aviation mascot silhouette,
-      goggles and microphone-face structure,
-      plush cap plus clear lens material contrast,
-      readable short Latin wordmark on a nameplate.
-
-  - id: elephant_gaga_plush
-    image: elephant.jpg
-    prompt: elephant.txt
-    quality: strong
-    fallback_safe: true
-    notes: "毛绒大象耳朵 + 暖黄光球 + Gaga 手写字;补充动物/针织/治愈软材质"
-    tags:
-      shape: [elephant, animal, mascot, big_ears, trunk, orb, soft_body]
-      color: [warm_yellow, gray, pink, blue, cream, gold]
-      material: [plush_fabric, knitted_textile, soft_vinyl, soft_emissive_panel, velvet_flock]
-      vibe: [cute, soft, healing, gentle, playful, idol_support]
-      text: [latin, short, embedded_wordmark, high_contrast, script_wordmark]
-    role_description: >-
-      A plush elephant idol lightstick on pure black in a full-product
-      45-degree right-facing view. The lamp head has a warm yellow glowing
-      orb center, oversized gray-pink fuzzy elephant ears, a blue knitted
-      trunk, small tusks, and a soft knitted handle. This image contributes:
-      elephant ears as the lamp-head silhouette,
-      warm orb core with soft handwritten Latin text,
-      plush and knitted textile material,
-      gentle healing animal-mascot identity.
-
-  - id: basketball_tiger_sport
-    image: basketball_tiger.png
-    prompt: basketball_tiger.txt
-    quality: strong
-    fallback_safe: true
-    notes: "篮球虎头 + Hoop Roar + 橙色软胶运动潮玩;补充篮球/动物运动融合"
-    tags:
-      shape: [basketball, tiger, animal, sport_ball, sport, mascot, ear, stripe]
-      color: [orange, cream, sky_blue, brown, black]
-      material: [soft_vinyl, matte_rubber, felt_fabric, matte_enamel, velvet_flock]
-      vibe: [sporty, playful, bold, cute, energetic, idol_support]
-      text: [latin, long, embedded_wordmark, high_contrast, athletic_logo]
-    role_description: >-
-      A basketball tiger idol lightstick on pure black in a full-product
-      45-degree right-facing view. The lamp head turns a basketball into a
-      rounded tiger-head mascot with ear bumps, cheek stripes, a padded
-      sweatband neck, and orange soft sport-toy material. This image
-      contributes:
-      basketball plus tiger mascot fusion,
-      sport-ball silhouette broken by animal ears and stripes,
-      soft vinyl / matte rubber tactile finish,
-      readable long athletic Latin wordmark.
-
-  - id: aurora_bunny_plush
-    image: aurora_bunny.png
-    prompt: aurora_bunny.txt
-    quality: strong
-    fallback_safe: true
-    notes: "极光兔耳 + Aurora Bunny Core + 薰衣草粉蓝软萌;补充兔耳/梦幻软材质"
-    tags:
-      shape: [bunny, rabbit, animal, bunny_ear, long_ears, mascot, cloud, ribbon]
-      color: [lavender, pink, icy_blue, pearl_white, purple]
-      material: [frosted_resin, pearlescent_lacquer, soft_vinyl, velvet_flock, silicone]
-      vibe: [dreamy, soft, sweet, cute, gentle, idol_support]
-      text: [latin, long, embedded_wordmark, high_contrast, plush_soft]
-    role_description: >-
-      A dreamy aurora bunny idol lightstick on pure black at a full-product
-      45-degree right-facing angle. The lamp head is built from tall plush
-      bunny ears, a lavender cloud-like core, icy blue side fins, star details,
-      and a soft aurora ribbon wrap. This image contributes:
-      long bunny-ear vertical silhouette,
-      lavender / pink / icy-blue dream palette,
-      frosted resin plus velvet-soft material,
-      long readable Latin wordmark embedded in a cloud core.
-
-  - id: tennis_frog_sport
-    image: tennis_frog.png
-    prompt: tennis_frog.txt
-    quality: strong
-    fallback_safe: true
-    notes: "网球青蛙 + Tennis Frog Core + 网球绒面凸眼;补充网球/青蛙运动款"
-    tags:
-      shape: [tennis_ball, tennis, frog, animal, sport_ball, sport, eye_bumps, court_stripe]
-      color: [tennis_yellow, leaf_green, green, white, olive]
-      material: [velvet_flock, soft_vinyl, matte_rubber, translucent_resin, matte_enamel]
-      vibe: [sporty, playful, cute, soft, bright, idol_support]
-      text: [latin, long, embedded_wordmark, high_contrast, athletic_logo]
-    role_description: >-
-      A tennis frog idol lightstick on pure black in a 45-degree
-      right-facing product view. The lamp head fuses a fuzzy tennis ball with
-      raised frog-eye domes, curved court-stripe inlays, leaf-green side
-      accents, and a compact sport handle. This image contributes:
-      tennis ball plus frog-face silhouette,
-      sport-ball texture with animal eye bumps,
-      fuzzy flocked tennis material,
-      long high-contrast athletic Latin wordmark.
-
-  - id: crystal_drake_scale
-    image: crystal_drake.png
-    prompt: crystal_drake.txt
-    quality: strong
-    notes: "晶鳞小龙 + Scale Light + 祖母绿龙鳞盾形;补充龙/鳞片/幻想装备"
-    tags:
-      shape: [dragon, drake, scale, horn, crest, shield, angular_fin, fantasy]
-      color: [emerald, green, silver, violet, smoke_black, cool_white]
-      material: [cut_crystal, crystal_core, smoked_resin, glossy_resin, metallic_trim]
-      vibe: [fantasy, bold, dramatic, mysterious, stage, idol_support]
-      text: [latin, long, embedded_wordmark, high_contrast, 3d_glow]
-    role_description: >-
-      A crystal drake idol lightstick on pure black at a full-product
-      45-degree right-facing angle. The lamp head is a dragon-scale shield
-      body with horn crest, angular side fins, emerald smoked-resin layers,
-      and a glowing central core. This image contributes:
-      dragon scale shield silhouette,
-      horn and crest fantasy equipment language,
-      emerald crystal / smoked resin material,
-      readable long Latin wordmark in a glowing core.
-
-  - id: sunflower_bee_hive
-    image: sunflower_bee.png
-    prompt: sunflower_bee.txt
-    quality: strong
-    fallback_safe: true
-    notes: "向日葵蜜蜂 + Sunny Hive + 黄色花瓣蜂蜜软胶;补充花朵/蜜蜂/温暖治愈"
-    tags:
-      shape: [sunflower, flower, bee, wing, petal, honey_drop, hive, mascot]
-      color: [sun_yellow, yellow, warm_brown, cream, honey_gold, orange]
-      material: [soft_vinyl, pearlescent_resin, soft_enamel, translucent_resin, velvet_flock]
-      vibe: [warm, sweet, healing, playful, cute, idol_support]
-      text: [latin, long, embedded_wordmark, high_contrast, rounded_wordmark]
-    role_description: >-
-      A sunflower bee idol lightstick on pure black in a 45-degree
-      right-facing product view. The lamp head is a cushioned sunflower petal
-      crown with a honey-glow center, small bee-wing side pads, honey-drop
-      details, and a warm cream-yellow handle. This image contributes:
-      sunflower petal crown silhouette,
-      bee wing and honey-drop support details,
-      warm yellow/brown soft material world,
-      readable long rounded Latin wordmark.
-
-  - id: bowling_penguin_sport
-    image: bowling_penguin.png
-    prompt: bowling_penguin.txt
-    quality: strong
-    fallback_safe: true
-    notes: "保龄企鹅 + Pin Slide + 黑白薄荷软胶;补充保龄球/企鹅/竖向运动主体"
-    tags:
-      shape: [bowling, bowling_ball, bowling_pin, penguin, bird, animal, sport_ball, sport]
-      color: [black, snow_white, white, mint, gray]
-      material: [soft_vinyl, felt_fabric, velvet_flock, glossy_ball_inlay, silicone]
-      vibe: [sporty, playful, soft, cute, designer_toy, idol_support]
-      text: [latin, long, embedded_wordmark, high_contrast, 3d_glow]
-    role_description: >-
-      A bowling penguin idol lightstick on pure black at a full-product
-      45-degree right-facing angle. The lamp head turns a bowling-pin body
-      into a penguin mascot with wing pads, a glossy bowling-ball belly
-      inlay, black-and-white soft surfaces, and mint glow accents. This image
-      contributes:
-      bowling pin plus penguin vertical silhouette,
-      sport object fused with animal mascot,
-      felt / soft vinyl with glossy ball inlay contrast,
-      readable long Latin wordmark.
-
-  - id: sticker_ghost_soft
-    image: sticker_ghost.png
-    prompt: sticker_ghost.txt
-    quality: strong
-    fallback_safe: true
-    notes: "贴纸幽灵 + Boo Pop + 奶白薰衣草软布;补充幽灵/贴纸/软糯幻想"
-    tags:
-      shape: [ghost, sticker, star, blanket_fold, wavy_edge, soft_body, mascot]
-      color: [milk_white, white, lavender, lemon_yellow, pearl_pink, pale_blue]
-      material: [soft_vinyl, velvet_flock, squishy_foam, silicone, soft_emissive_panel]
-      vibe: [dreamy, playful, sweet, cute, soft, idol_support]
-      text: [latin, short, embedded_wordmark, high_contrast, plush_soft]
-    role_description: >-
-      A sticker ghost idol lightstick on pure black in a full-product
-      45-degree right-facing view. The lamp head is a milk-white soft ghost
-      with rounded blanket folds, a wavy lower edge, sticker-star cheeks,
-      lavender handle details, and a warm central text area. This image
-      contributes:
-      soft sheet-ghost silhouette,
-      sticker star and wavy blanket-fold details,
-      squishy foam / velvet soft material,
-      short high-contrast playful Latin wordmark.
+- id: butterfly_korean
+  image: butterfly_korean.png
+  prompt: butterfly_korean.txt
+  quality: strong
+  notes: 韩文 + 蝶翼 + 紫色;非拉丁文字成功嵌入实体爱心核心
+  tags:
+    shape:
+    - butterfly
+    - insect
+    - wing
+    - heart_silhouette
+    - symmetric
+    color:
+    - purple
+    - lavender
+    - pearl
+    - white
+    material:
+    - translucent_resin
+    - pearlescent_lacquer
+    - jelly_crystal
+    - jelly_resin
+    vibe:
+    - dreamy
+    - soft
+    - idol_support
+    - romantic
+    text:
+    - non_latin
+    - korean
+    - embedded_in_core
+    - 3d_glow
+  role_description: 'A premium idol lightstick on pure black at a 45-degree right-facing hero angle. The lamp head is a one-piece solid heart with NO outer frame and NO hollow outline, flanked by symmetric translucent butterfly-wing silhouettes. Non-Latin Korean glyphs are embedded directly into the solid central core with 3D bevel, soft rim glow, and pearlescent lacquer. Palette is purple / lavender / pearl-white. This image contributes: orientation (45-degree right hero shot), lamp-head structure (one-piece solid heart with no outer frame), wing-attached silhouette extension, non-Latin glyph rendering inside a solid core.'
+- id: heart_arabic_romance
+  image: heart_arabic_romance.png
+  prompt: heart_arabic_romance.txt
+  quality: strong
+  notes: 阿拉伯文字 + 浪漫异域气质;一体实体爱心,书法笔势装饰
+  tags:
+    shape:
+    - heart
+    - solid_one_piece
+    - flowing_decoration
+    color:
+    - pink
+    - smoke_pink
+    - rose
+    - pearl
+    - champagne
+    material:
+    - pearlescent_resin
+    - soft_jelly_crystal
+    - jelly_resin
+    - mirror_trim
+    vibe:
+    - romantic
+    - elegant
+    - exotic
+    - gentle
+    - dreamy
+    text:
+    - non_latin
+    - arabic
+    - calligraphy
+    - embedded_in_core
+    - 3d_glow
+  role_description: 'A premium idol lightstick on pure black at a 45-degree right-facing hero angle. The lamp head is a fully closed one-piece solid heart with flowing surface curvature and calligraphy-like ribbon ornaments sculpted INTO the heart body, not as an outer frame. Non-Latin Arabic glyphs are embedded into the solid center with calligraphic 3D typography, soft inner glow, and pearlescent rim. Palette is rose / smoke pink / pearl / champagne. This image contributes: gentle exotic romantic mood, calligraphic / non-Latin script handling, a fully closed solid-heart silhouette (no frame, no hollow), flowing surface decoration that lives inside the heart body.'
+- id: mascot_cherry_jelly
+  image: mascot_cherry_jelly.png
+  prompt: mascot_cherry_jelly.txt
+  quality: strong
+  fallback_safe: true
+  notes: 两个 mascot 融合(樱桃+龟壳)+ 果冻甜系材质;短拉丁文嵌入
+  tags:
+    shape:
+    - mascot
+    - fruit_cluster
+    - fruit
+    - food
+    - shell
+    - rounded_dome
+    - dual_motif
+    color:
+    - cherry_red
+    - cream
+    - mint_green
+    - pistachio
+    - pearl_white
+    material:
+    - jelly_resin
+    - cream_enamel
+    - pearlescent_trim
+    vibe:
+    - cute
+    - sweet
+    - playful
+    - soft
+    - idol_support
+    - designer_toy
+    text:
+    - latin
+    - short
+    - embedded_in_core
+    - 3d_glow
+    - candy_emboss
+  role_description: 'A premium idol lightstick on pure black at a 45-degree right-facing hero angle. The lamp head is a one-piece solid jelly form that fuses two mascot motifs (cherry domes on top, green turtle-shell curvature on the lower half) — they share one outline rather than being two separate objects pasted together. Short Latin text is embedded into the central core with 3D candy-bevel typography and soft inner glow. Palette is cherry red / cream / mint green / pearl. This image contributes: cute jelly material world, how to fuse two thematic motifs into one silhouette, short Latin glyph handling with candy-emboss typography, sweet designer-toy collectible quality.'
+- id: purple_heart_y2k
+  image: purple_heart_y2k.png
+  prompt: purple_heart_y2k.txt
+  quality: strong
+  fallback_safe: true
+  notes: 紫色一体实体爱心 + Y2K 甜感 + 英文嵌入;包裹式心形体积
+  tags:
+    shape:
+    - heart
+    - solid_one_piece
+    - wrapped_layers
+    color:
+    - purple
+    - grape
+    - lavender
+    - pearl
+    - silver_white
+    material:
+    - jelly_resin
+    - pearlescent_lacquer
+    - crystal_core
+    vibe:
+    - gentle
+    - dreamy
+    - sweet
+    - companionship
+    - idol_support
+    text:
+    - latin
+    - handwriting
+    - embedded_in_core
+    - 3d_glow
+    - y2k_emboss
+  role_description: 'A premium idol lightstick on pure black at a 45-degree right-facing hero angle. The lamp head is a closed one-piece solid heart with soft pillow-volume and wrapped layered cross-sections — the heart silhouette is built from stacked rounded slices, not from an outer frame. Latin handwriting-style text is embedded into the central core with 3D handwriting typography, soft inner glow, and crystal-jelly emboss effect. Palette is deep purple / grape / lavender / pearl. This image contributes: gentle handwritten Latin glyph treatment, wrapped/layered heart cross-section structure, soft pillow-volume one-piece heart body (no outer frame), idol-support warmth.'
+- id: boxer2_street_glove
+  image: boxer2_street_glove.jpg
+  prompt: boxer2_street_glove.txt
+  quality: strong
+  notes: 拳击手套 + LA GANGA 字标 + 紫绿高饱和潮流玩具感
+  tags:
+    shape:
+    - boxing_glove
+    - glove
+    - sport
+    - chunky_silhouette
+    - armor
+    - compact_base_node
+    color:
+    - neon_green
+    - electric_purple
+    - purple
+    - green
+    - black
+    - high_contrast
+    material:
+    - glossy_plastic
+    - spray_paint_finish
+    - metallic_trim
+    - acrylic_light_core
+    - clear_coating
+    vibe:
+    - street_sport
+    - energetic
+    - youthful
+    - punchy
+    - collectible_toy
+    - idol_support
+    text:
+    - latin
+    - short
+    - embedded_wordmark
+    - 3d_glow
+    - thick_outline_letters
+  role_description: 'A premium idol lightstick on pure black at a 45-degree right-facing hero angle. The lamp head is a simplified boxing-glove volume with a compact grip, bold green-purple contrast, glossy toy-plastic spray finish, and a large short Latin wordmark locked into the glove face. Palette is purple / neon green / black / cool white. This image contributes: bold glove-shaped lamp-head volume, high-saturation street-sport colour blocking, thick outlined wordmark treatment, glossy collectible toy finish with compact sporty bottom structure.'
+- id: pink_hair_bull_star
+  image: pink_hair_bull_star.jpg
+  prompt: pink_hair_bull_star.txt
+  quality: strong
+  notes: 粉色长毛 + 银白牛角 + 星形灯头;甜酷毛发方向
+  tags:
+    shape:
+    - star
+    - horn
+    - cow_horn
+    - fur
+    - hair
+    - soft_texture
+    - symmetric_silhouette
+    color:
+    - hot_pink
+    - candy_pink
+    - electric_pink
+    - silver_white
+    - pearl_white
+    material:
+    - glossy_resin
+    - mirror_metal
+    - translucent_jelly
+    - jelly_resin
+    - fiber_hair
+    - velvet_flock
+    - pearl_coating
+    vibe:
+    - glamorous
+    - sweet_cool
+    - edgy
+    - romantic
+    - luxury_collectible
+    - idol_support
+    text:
+    - latin
+    - short
+    - centered_wordmark
+    - 3d_glow
+    - ornamental_script
+  role_description: 'A premium idol lightstick on pure black at a 45-degree right-facing hero angle. The lamp head uses a bright pink star-shaped core with silver upward horn arcs and real-looking pink hair/fur fibers attached around the perimeter. The design should read as sweet-cool glam energy rather than a literal animal head. Palette is hot pink / candy pink / silver white / pearl white. Short Latin text is centered in the glowing star core. This image contributes: star lamp-head silhouette, soft pink hair/fur as tactile outer texture, silver horn-like structural accents, glamorous pink-and-silver collectible identity.'
+- id: dragon_empire_lightning
+  image: dragon_empire_lightning.png
+  prompt: dragon_empire_lightning.txt
+  quality: strong
+  notes: 紫金龙鳞 + 闪电 + 帝国权杖感;适合龙/雷电/霸气/幻想装备
+  tags:
+    shape:
+    - dragon
+    - scale
+    - electric
+    - lightning
+    - horn
+    - crest
+    - armor
+    color:
+    - purple
+    - gold
+    - yellow
+    - black
+    - electric_yellow
+    material:
+    - crystal_core
+    - metallic_trim
+    - glossy_resin
+    - neon_tube
+    - faceted_crystal
+    vibe:
+    - battle
+    - powerful
+    - royal
+    - fantasy
+    - energetic
+    - idol_support
+    - dramatic
+    text:
+    - latin
+    - short
+    - embedded_in_core
+    - 3d_glow
+    - script_logo
+  role_description: 'A premium idol lightstick on pure black at a 45-degree right-facing hero angle. The lamp head is a purple-and-gold heart-frame power core surrounded by rounded dragon-scale relief, yellow lightning bolts, and violet electric arcs. The handle reads like a fantasy empire scepter, with a stylized dragon-head bottom node, curled horn details, and crystalline purple raised panels. Palette is royal purple / electric yellow / gold / black. Short Latin text is embedded in the central dark-purple core with glowing gold script typography. This image contributes: dragon-scale relief wrapped around a heart lamp head, lightning-bolt silhouette extensions, purple-gold royal fantasy mood, scepter-like vertical proportion with dragon-head bottom detail.'
+- id: cap_nameplate_plush
+  image: cap_nameplate_plush.jpg
+  prompt: cap_nameplate_plush.txt
+  quality: strong
+  fallback_safe: true
+  notes: 红色棒球帽 + Xoliza 发光灯牌 + 蓝色布艺手柄;适合帽子/俱乐部/俏皮复古
+  tags:
+    shape:
+    - baseball_cap
+    - hat
+    - nameplate
+    - rounded_handle
+    - soft_blocky_silhouette
+    color:
+    - red
+    - crimson_red
+    - blue
+    - royal_blue
+    - warm_yellow_glow
+    - gold
+    material:
+    - plush_fabric
+    - stitched_textile
+    - soft_emissive_panel
+    - velvet_surface
+    - velvet_flock
+    - padded_trim
+    vibe:
+    - playful_retro
+    - cute_collectible
+    - soft_tactile
+    - bright_friendly
+    - idol_support
+    text:
+    - latin
+    - short
+    - embedded_lettering
+    - 3d_glow
+    - rounded_wordmark
+  role_description: 'A premium idol lightstick on pure black in a full-product 45-degree right-facing view. The whole lightstick is rotated as one object so the front of the lamp head, right-side thickness, and handle side are all visible. The lamp head is a red baseball cap topper with a glowing nameplate nested under the brim, integrated as one playful plush product rather than separated props. Palette is red / royal blue / warm yellow glow / gold. Short Latin text is embedded in the nameplate with rounded retro cartoon lettering. This image contributes: baseball-cap lamp-head silhouette, embedded nameplate under a brim, stitched plush/fabric material language, bright friendly retro collectible mood.'
+- id: melon_kawaii_vine
+  image: melon_kawaii_vine.jpg
+  prompt: melon_kawaii_vine.txt
+  quality: strong
+  fallback_safe: true
+  notes: 日系蜜瓜 + 叶片包裹 + 藤蔓手柄;水果甜系通用 reference
+  tags:
+    shape:
+    - melon
+    - fruit_cluster
+    - fruit
+    - food
+    - leaf
+    - vine
+    - round_bulb_top
+    - organic_curves
+    color:
+    - melon_green
+    - melon_yellow
+    - green
+    - light_green
+    - leaf_green
+    - cream_white
+    - warm_golden_yellow
+    material:
+    - translucent_resin
+    - frosted_acrylic
+    - soft_enamel
+    - satin_finish
+    - subtle_fiber_texture
+    vibe:
+    - japanese_cute
+    - fresh
+    - healing
+    - sweet
+    - playful
+    - sweet_soft
+    - lightweight
+    - idol_support
+    text:
+    - non_latin
+    - japanese
+    - short
+    - embedded_in_core
+    - 3d_glow
+    - rounded_logo
+  role_description: 'A premium idol lightstick on pure black in a full-product 45-degree right-facing view. The whole lightstick is rotated as one object so the front of the lamp head, right-side thickness, and handle side are all visible. The lamp head is a round melon bulb with a clear melon-rind texture border, soft green leaves cradling the sides, and a vine-like handle. Non-Latin Japanese text is embedded in the central melon core with rounded plush-soft 3D lettering. Palette is melon yellow / light green / cream white / warm golden yellow. This image contributes: melon fruit lamp-head silhouette, leaf cradle and vine handle structure, fresh healing Japanese cute mood, readable non-Latin text inside a fruit core.'
+- id: potato_disco_toy
+  image: potato_disco_toy.jpg
+  prompt: potato_disco_toy.txt
+  quality: strong
+  fallback_safe: true
+  notes: 土豆头像 + Spud Club 字标 + disco 复古玩具感
+  tags:
+    shape:
+    - potato
+    - vegetable
+    - food
+    - mascot
+    - rounded_potato_head
+    - face
+    - ring_orbit_detail
+    color:
+    - potato_brown
+    - earth_tan
+    - neon_pink
+    - neon_blue
+    - purple
+    - cream_yellow
+    material:
+    - matte_clay
+    - ceramic_texture
+    - translucent_acrylic
+    - translucent_resin
+    - soft_enamel
+    - rubber_grip
+    vibe:
+    - retro_toy
+    - disco_pop
+    - playful
+    - collectible
+    - designer_toy
+    - playful_collectible
+    - handcrafted
+    - whimsical
+    - idol_support
+    text:
+    - latin
+    - short
+    - script_wordmark
+    - embedded_logo
+    - soft_neon_outline
+  role_description: 'A premium idol lightstick on pure black in a full-product 45-degree right-facing view. The whole lightstick is rotated as one object so the front of the lamp head, right-side thickness, and handle side are all visible. The lamp head is a rounded potato mascot head with a centered short Latin wordmark, playful facial energy, clay-like potato skin texture, and small disco-pop orbit details. Palette is potato brown / earth tan / neon pink / neon blue / purple / cream yellow. This image contributes: rounded potato mascot lamp-head shape, matte clay and ceramic potato-skin texture, playful retro toy and disco mood, short script wordmark integrated into a mascot face.'
+- id: nova_fox_moon
+  image: nova_fox_moon.png
+  prompt: nova_fox_moon.txt
+  quality: strong
+  fallback_safe: true
+  notes: 银黑月狐 + 新月护片 + Moon Crew;适合狐面/月光/冷艳梦幻
+  tags:
+    shape:
+    - fox
+    - animal
+    - mask
+    - crescent
+    - moon
+    - ribbon
+    - mascot
+    - symmetric
+    color:
+    - purple
+    - lavender
+    - silver
+    - smoke_gray
+    - black
+    - pearl
+    material:
+    - translucent_resin
+    - pearlescent_lacquer
+    - crystal_core
+    - metallic_trim
+    vibe:
+    - dreamy
+    - elegant
+    - mysterious
+    - refined
+    - idol_support
+    - cool
+    text:
+    - latin
+    - short
+    - embedded_in_core
+    - 3d_glow
+    - rounded_logo
+  role_description: 'A premium idol lightstick on pure black in a full-product 45-degree right-facing view. The lamp head reads as a moon-fox mask: raised ears, sweeping cheek plates, crescent arcs, ribbon-tail curves, and a solid gem-like center. Palette is lavender purple / smoke gray / silver / pearl. Short Latin text is embedded in the central core with soft moonlit glow. This image contributes: fox-mask and crescent-moon silhouette, elegant silver-purple translucent material language, refined fantasy mascot mood, readable short Latin text inside a solid core.'
+- id: thunder_arcade_bolt
+  image: thunder_arcade_bolt.png
+  prompt: thunder_arcade_bolt.txt
+  quality: strong
+  fallback_safe: true
+  notes: 电蓝闪电 + 街机按钮 + Bolt Team;适合电竞/闪电/街机
+  tags:
+    shape:
+    - electric
+    - lightning
+    - star
+    - arcade_button
+    - rounded_bolt
+    - mascot
+    color:
+    - electric_blue
+    - blue
+    - yellow
+    - black
+    - white
+    - high_contrast
+    material:
+    - glossy_resin
+    - translucent_jelly
+    - soft_enamel
+    - frosted_acrylic
+    vibe:
+    - playful
+    - energetic
+    - battle
+    - arcade
+    - youthful
+    - idol_support
+    text:
+    - latin
+    - short
+    - embedded_in_core
+    - 3d_glow
+    - rounded_logo
+  role_description: 'A premium idol lightstick on pure black in a full-product 45-degree right-facing view. The lamp head is a rounded lightning-bolt / arcade badge form with toy-like blue resin, yellow button nodes, and a dark central display core. Palette is electric blue / yellow / black / white. Short Latin text is embedded in the center with bright arcade-logo glow. This image contributes: rounded lightning and arcade-button silhouette, high-saturation blue-yellow game palette, glossy toy-resin material, energetic esports / arcade mood.'
+- id: star_run_furry_orbit
+  image: star_run_furry_orbit.png
+  prompt: star_run_furry_orbit.txt
+  quality: strong
+  fallback_safe: true
+  notes: 粉紫星形 + 月弧轨道 + 粉色毛绒;适合星星/轨道/月光/梦幻
+  tags:
+    shape:
+    - star
+    - crescent
+    - orbit
+    - moon
+    - hair
+    - fur
+    - soft_texture
+    - symmetric
+    color:
+    - pink
+    - hot_pink
+    - lavender
+    - blue
+    - purple
+    - pearl_white
+    material:
+    - translucent_resin
+    - crystal_core
+    - fiber_hair
+    - velvet_flock
+    - glossy_resin
+    - pearl_coating
+    vibe:
+    - dreamy
+    - glamorous
+    - sweet
+    - cosmic
+    - idol_support
+    - soft
+    text:
+    - latin
+    - short
+    - embedded_in_core
+    - 3d_glow
+    - futuristic_logo
+  role_description: 'A premium idol lightstick on pure black in a full-product 45-degree right-facing view. The lamp head is a translucent pink star with crescent and orbit arcs, a soft pink fur halo, tiny star crystals, and a blue cosmic handle. Palette is hot pink / lavender / blue / pearl white. Short Latin text is centered in the glowing star core. This image contributes: star lamp-head silhouette with moon/orbit extensions, soft fur as a tactile background texture, pink-blue cosmic idol palette, clean futuristic short Latin text.'
+- id: globe_nationteam
+  image: globe_nationteam.png
+  prompt: globe_nationteam.txt
+  quality: strong
+  fallback_safe: true
+  notes: 地球徽章 + 黄绿环冠 + Nationteam;适合社群/全球/广播身份
+  tags:
+    shape:
+    - globe
+    - orbit
+    - ring
+    - badge
+    - round_bulb_top
+    - sphere
+    color:
+    - yellow
+    - green
+    - black
+    - gold
+    - warm_yellow_glow
+    material:
+    - translucent_resin
+    - glossy_resin
+    - brushed_metal
+    - crystal_core
+    vibe:
+    - communal
+    - uplifting
+    - friendly
+    - broadcast_identity
+    - badge_like
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_in_core
+    - 3d_glow
+    - rounded_wordmark
+  role_description: 'A premium idol lightstick on pure black in a full-product 45-degree right-facing view. The lamp head is a globe-like spherical badge wrapped by yellow-green orbit rings, translucent resin arcs, and a compact yellow handle with small world-emblem details. Palette is yellow / green / black / gold. Long Latin text is embedded across the globe core with warm glowing rounded lettering. This image contributes: globe and orbit-ring lamp-head structure, community / broadcast badge identity, yellow-green high-contrast resin palette, readable long Latin text on a spherical core.'
+- id: cherry_turtle_jinas
+  image: cherry_turtle_jinas.png
+  prompt: cherry_turtle_jinas.txt
+  quality: strong
+  fallback_safe: true
+  notes: 樱桃 + 龟壳 + JINA's;甜系果冻 mascot
+  tags:
+    shape:
+    - mascot
+    - fruit_cluster
+    - fruit
+    - food
+    - cherry
+    - shell
+    - turtle
+    - animal
+    - rounded_dome
+    - dual_motif
+    color:
+    - cherry_red
+    - pink
+    - cream
+    - mint_green
+    - pistachio
+    - pearl_white
+    material:
+    - jelly_resin
+    - cream_enamel
+    - plush_fabric
+    - translucent_resin
+    - pearlescent_trim
+    vibe:
+    - cute
+    - sweet
+    - playful
+    - healing
+    - soft
+    - idol_support
+    - designer_toy
+    text:
+    - latin
+    - short
+    - embedded_in_core
+    - 3d_glow
+    - rounded_logo
+  role_description: 'A premium idol lightstick on pure black in a full-product 45-degree right-facing view. The lamp head fuses cherry domes, a pink turtle-shell center, green shell panels, soft side pads, and vine details into one sweet mascot silhouette. Palette is cherry red / pink / cream / mint green. Short Latin text is embedded in the translucent pink shell core. This image contributes: cherry plus turtle-shell dual-motif fusion, cute jelly-resin and soft plush contrast, sweet healing mascot mood, short Latin text inside a rounded shell core.'
+- id: raven_trlinda_core
+  image: raven_trlinda_core.png
+  prompt: raven_trlinda_core.txt
+  quality: strong
+  notes: 乌鸦羽翼 + 电紫闪电 + TrLinda;适合暗羽/速度/战斗感
+  tags:
+    shape:
+    - raven
+    - crow
+    - bird
+    - animal
+    - wing
+    - feather
+    - electric
+    - lightning
+    - spike
+    color:
+    - electric_purple
+    - purple
+    - black
+    - cool_white
+    - neon_blue
+    material:
+    - blown_glass
+    - leather_wrap
+    - crystal_core
+    - metallic_trim
+    - feather
+    vibe:
+    - sleek
+    - focused
+    - cool
+    - mysterious
+    - battle
+    - protective
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_in_core
+    - 3d_glow
+    - bold_logo
+  role_description: 'A premium idol lightstick on pure black in a full-product 45-degree right-facing view. The lamp head is a black-purple raven crest with layered wings, a sharp bird head, lightning shards, and a glossy purple core above a black leather-wrapped handle. Palette is electric purple / black / cool white. Long Latin text is embedded in the central core with strong purple glow. This image contributes: raven/wing silhouette with lightning accents, dark leather plus glossy crystal material contrast, sleek protective battle mood, readable long Latin text in a dark central core.'
+- id: hat_mv_silver
+  image: hat_mv_silver.png
+  prompt: hat_mv_silver.txt
+  quality: strong
+  notes: 宽檐礼帽 + 银红翼片 + MV;适合帽饰/复古舞台/轻奢
+  tags:
+    shape:
+    - hat
+    - brim
+    - wing
+    - heart
+    - feather
+    - crest
+    - symmetric
+    color:
+    - silver
+    - red
+    - warm_white
+    - champagne
+    - charcoal_black
+    material:
+    - mirror_metal
+    - blown_glass
+    - leather_wrap
+    - crystal_core
+    - enamel
+    vibe:
+    - elegant
+    - glamorous
+    - vintage_stage
+    - refined
+    - bold
+    - idol_support
+    text:
+    - latin
+    - short
+    - embedded_in_core
+    - 3d_glow
+    - serif_logo
+  role_description: 'A premium idol lightstick on pure black in a full-product 45-degree right-facing view. The lamp head combines a silver top hat, a red heart core, sweeping wing plates, feather crest details, and a glass handle with warm sparkle. Palette is silver / red / warm white / champagne. Short Latin text is embedded in the heart core with bright serif glow. This image contributes: hat-brim and winged-heart lamp-head structure, polished silver/red luxury palette, vintage stage and formal emblem mood, crisp short Latin initials in a central core.'
+- id: bird_gothic_trlinda
+  image: bird_gothic_trlinda.png
+  prompt: bird_gothic_trlinda.txt
+  quality: strong
+  notes: 哥特乌鸦环抱 + 粉紫星光 + TrLinda;适合暗黑羽翼/哥特文字
+  tags:
+    shape:
+    - raven
+    - crow
+    - bird
+    - animal
+    - wing
+    - feather
+    - orbit
+    - gothic_frame
+    color:
+    - black
+    - purple
+    - pink
+    - rose_pink
+    - cool_white
+    material:
+    - feather
+    - translucent_crystal
+    - glossy_resin
+    - metallic_trim
+    vibe:
+    - gothic
+    - mysterious
+    - dramatic
+    - protective
+    - glamorous
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_wordmark
+    - 3d_glow
+    - gothic_logo
+  role_description: 'A premium idol lightstick on pure black in a front-biased product view. The lamp head is a dark raven curled around a pink-purple glowing core with layered feathers, spark particles, and a slim glowing handle. Palette is black / purple / rose pink / cool white. Long Latin text uses gothic lettering across the center. This image contributes: raven curled around a core silhouette, gothic long-wordmark treatment, feather texture and pink star-glow contrast, dramatic dark idol mood.'
+- id: cat_cloud_maozai
+  image: cat_cloud_maozai.png
+  prompt: cat_cloud_maozai.txt
+  quality: strong
+  fallback_safe: true
+  notes: 布偶猫趴云朵字牌 + 茂仔;自然麻绳藤蔓手柄
+  tags:
+    shape:
+    - cat
+    - animal
+    - mascot
+    - cloud_nameplate
+    - paw
+    - vine
+    - rounded_handle
+    color:
+    - cream
+    - mint_green
+    - warm_brown
+    - tan
+    - soft_yellow
+    material:
+    - plush_fabric
+    - fiber_hair
+    - rope_wrap
+    - soft_emissive_panel
+    - matte_fabric
+    vibe:
+    - cute
+    - healing
+    - warm
+    - natural
+    - playful
+    - soft
+    - idol_support
+    text:
+    - non_latin
+    - chinese
+    - short
+    - embedded_lettering
+    - plush_soft
+  role_description: 'A premium idol lightstick on pure black in a full-product 45-degree right-facing view. A fluffy ragdoll-style cat lounges on a pale green cloud nameplate above a rope-wrapped handle with vines and a small charm. Palette is cream / mint green / warm brown / soft yellow. Short Chinese text is embedded as thick soft lettering in the nameplate. This image contributes: realistic plush cat mascot perched on a nameplate, natural rope and vine handle language, warm healing pet-companion mood, readable Chinese plush lettering.'
+- id: cat_omamori_maozai
+  image: cat_omamori_maozai.png
+  prompt: cat_omamori_maozai.txt
+  quality: strong
+  fallback_safe: true
+  notes: 猫咪御守布艺 + 茂仔;绒布流苏和花朵
+  tags:
+    shape:
+    - cat
+    - animal
+    - mascot
+    - omamori
+    - charm
+    - tassel
+    - flower
+    - rounded_rectangle
+    color:
+    - mint_green
+    - cream
+    - pastel_pink
+    - pastel_yellow
+    - warm_brown
+    material:
+    - plush_fabric
+    - stitched_textile
+    - embroidery
+    - tassel
+    - soft_fiber
+    vibe:
+    - japanese_cute
+    - healing
+    - soft
+    - blessing
+    - gentle
+    - idol_support
+    text:
+    - non_latin
+    - chinese
+    - short
+    - embroidered_text
+    - plush_soft
+  role_description: 'A premium idol lightstick on pure black in a full-product 45-degree right-facing view. The lamp head is a soft omamori-like charm with a fluffy cat face, embroidered flowers, bow knots, tassel, and a plush green handle. Palette is mint green / cream / pastel pink / warm brown. Short Chinese text is stitched into the charm front. This image contributes: omamori charm lamp-head silhouette, embroidered plush and tassel material language, gentle blessing / healing mood, readable Chinese stitched text.'
+- id: arabic_purple_calligraphy
+  image: arabic_purple_calligraphy.jpg
+  prompt: arabic_purple_calligraphy.txt
+  quality: strong
+  notes: 紫色阿拉伯书法 + 水晶火焰丝带;适合异域文字/梦幻紫
+  tags:
+    shape:
+    - calligraphy
+    - flame
+    - ribbon
+    - crescent
+    - flowing_decoration
+    - orbit
+    color:
+    - purple
+    - lavender
+    - rose
+    - pink
+    - pearl
+    - champagne
+    material:
+    - translucent_resin
+    - crystal_core
+    - pearlescent_lacquer
+    - metallic_trim
+    vibe:
+    - romantic
+    - exotic
+    - dreamy
+    - elegant
+    - mysterious
+    - idol_support
+    text:
+    - non_latin
+    - arabic
+    - calligraphy
+    - embedded_wordmark
+    - 3d_glow
+  role_description: 'A premium idol lightstick on pure black in a full-product 45-degree right-facing view. The lamp head is built from translucent purple ribbon arcs, flame-like calligraphy curves, a warm central crystal, and a slim purple handle with moon and gem details. Palette is lavender / rose purple / pearl / champagne. Arabic calligraphic text forms the visual center. This image contributes: non-Latin Arabic calligraphy as the lamp-head structure, flowing ribbon and flame-like purple silhouette, translucent crystal material, exotic romantic night-stage mood.'
+- id: rooster_patrona
+  image: rooster_patrona.png
+  prompt: rooster_patrona.txt
+  quality: strong
+  notes: 公鸡侧身 + 暖橙晶核 + Patrona;适合动物徽章/明亮复古
+  tags:
+    shape:
+    - rooster
+    - bird
+    - animal
+    - feather
+    - crest
+    - mascot
+    - round_bulb_top
+    color:
+    - coral_red
+    - orange
+    - cream
+    - yellow
+    - warm_white
+    - gold
+    material:
+    - glossy_resin
+    - translucent_crystal
+    - soft_enamel
+    - pearlescent_lacquer
+    vibe:
+    - warm
+    - playful
+    - friendly
+    - retro
+    - bright
+    - idol_support
+    text:
+    - latin
+    - short
+    - embedded_in_core
+    - 3d_glow
+    - script_wordmark
+  role_description: 'A premium idol lightstick on pure black in a full-product 45-degree right-facing view. The lamp head is a rounded rooster silhouette with coral crest, orange tail feathers, a faceted glowing belly core, and a cream handle with wheat-like relief. Palette is coral red / orange / cream / warm gold. Short Latin script text is embedded in the belly crystal. This image contributes: rooster mascot lamp-head silhouette, warm retro orange-cream palette, glossy toy-resin and crystal core material, friendly short script wordmark.'
+- id: eagle_trlinda_plush
+  image: eagle_trlinda_plush.png
+  prompt: eagle_trlinda_plush.txt
+  quality: strong
+  notes: 紫色鹰翼毛绒 + TrLinda;适合羽翼/鹰徽/强守护感
+  tags:
+    shape:
+    - eagle
+    - bird
+    - animal
+    - wing
+    - feather
+    - mascot
+    - symmetric
+    color:
+    - purple
+    - black
+    - white
+    - gold
+    - silver
+    material:
+    - feather
+    - plush_fabric
+    - translucent_resin
+    - metallic_trim
+    vibe:
+    - protective
+    - powerful
+    - dramatic
+    - bold
+    - idol_support
+    text:
+    - latin
+    - long
+    - embroidered_text
+    - 3d_glow
+    - arched_wordmark
+  role_description: 'A premium idol lightstick on pure black in a front-facing product view. The lamp head is a purple eagle mascot with raised wings, a white eagle head, plush feather texture, and a short purple handle. Palette is deep purple / black / white / gold. Long Latin text is arched across the chest in soft raised lettering. This image contributes: eagle-wing mascot silhouette, plush feather material and animal-emblem mood, strong protective identity, arched long Latin wordmark.'
+- id: iron_john_badge
+  image: iron_john_badge.jpg
+  prompt: iron_john_badge.txt
+  quality: strong
+  notes: 深蓝银徽章 + 手铐盾牌 + JOHN;适合警探/秩序/硬朗金属
+  tags:
+    shape:
+    - shield
+    - badge
+    - police_badge
+    - fleur_de_lis
+    - handcuff
+    - armor
+    - vertical_scepter
+    color:
+    - navy_blue
+    - silver
+    - black
+    - cool_white
+    - metal_gray
+    material:
+    - brushed_metal
+    - enamel
+    - hard_plastic
+    - clear_acrylic
+    - leather_wrap
+    vibe:
+    - orderly
+    - strong
+    - cool
+    - authoritative
+    - refined
+    - idol_support
+    text:
+    - latin
+    - short
+    - embedded_in_core
+    - 3d_glow
+    - gothic_logo
+  role_description: 'A premium idol lightstick on pure black in a centered product view. The lamp head is a police / detective-style shield badge with fleur-de-lis, handcuff rings, rivets, and a navy handle with metal collars. Palette is navy blue / silver / black / cool white. Short Latin text is embedded in a shield-shaped glowing nameplate. This image contributes: shield badge and handcuff structural language, hard metal / enamel equipment finish, orderly authoritative mood, short gothic Latin lettering.'
+- id: pink_queen_gigi
+  image: pink_queen_gigi.png
+  prompt: pink_queen_gigi.txt
+  quality: strong
+  notes: 粉色女王皇冠 + Gigi;适合皇冠/甜酷/舞台中心
+  tags:
+    shape:
+    - crown
+    - queen
+    - heart
+    - gem
+    - scepter
+    - symmetric
+    color:
+    - hot_pink
+    - pink
+    - pearl_white
+    - silver
+    - black
+    material:
+    - mirror_metal
+    - translucent_crystal
+    - glossy_resin
+    - pearlescent_lacquer
+    vibe:
+    - glamorous
+    - sweet_cool
+    - confident
+    - bright
+    - idol_support
+    text:
+    - latin
+    - short
+    - embedded_in_core
+    - 3d_glow
+    - rounded_wordmark
+  role_description: 'A premium idol lightstick on pure black in a full-product 45-degree right-facing view. The lamp head is a hot-pink crown with crystal panels, a heart core, ring nameplate, and a glossy pink-white scepter handle. Palette is hot pink / pale pink / pearl white / silver / black. Short Latin text is centered in the heart core with bright rounded glow. This image contributes: queen crown and heart lamp-head silhouette, pink crystal / mirror-metal luxury finish, confident sweet-cool idol mood, short rounded Latin wordmark.'
+- id: purple_wave_amen
+  image: purple_wave_amen.png
+  prompt: purple_wave_amen.txt
+  quality: strong
+  fallback_safe: true
+  notes: 紫色水波花瓣 + A.men';适合梦幻水晶/月光/温柔紫
+  tags:
+    shape:
+    - flower
+    - wave
+    - crescent
+    - crystal
+    - flowing_decoration
+    - rounded_bulb_top
+    color:
+    - purple
+    - lavender
+    - pearl_white
+    - silver
+    - deep_purple
+    material:
+    - translucent_resin
+    - crystal_core
+    - pearlescent_lacquer
+    - glossy_resin
+    vibe:
+    - dreamy
+    - gentle
+    - romantic
+    - elegant
+    - soft
+    - idol_support
+    text:
+    - latin
+    - short
+    - embedded_in_core
+    - 3d_glow
+    - script_wordmark
+  role_description: 'A premium idol lightstick on pure black in a full-product 45-degree right-facing view. The lamp head is a purple flower/wave crystal ring with pearly white edges, hanging crystal shards, a deep violet central core, and a purple handle with moon details. Palette is lavender / deep purple / pearl white / silver. Short Latin script text is embedded in the center. This image contributes: flowing flower-wave lamp-head silhouette, translucent purple crystal material, gentle moonlit romantic mood, short script Latin text in a central core.'
+- id: red_panda_soft_mascot
+  image: red_panda_soft_mascot.png
+  prompt: red_panda_soft_mascot.txt
+  quality: strong
+  fallback_safe: true
+  notes: 小熊猫 + 月牙抱牌 + 奶油黄软绒;补充动物/软萌/异形边界
+  tags:
+    shape:
+    - red_panda
+    - animal
+    - mascot
+    - crescent
+    - side_swept
+    - charm_cluster
+    color:
+    - butter_yellow
+    - sky_blue
+    - soft_white
+    - caramel_orange
+    - brown
+    material:
+    - plush_fabric
+    - velvet_flock
+    - soft_vinyl
+    - matte_enamel
+    - translucent_resin
+    vibe:
+    - cute
+    - soft
+    - healing
+    - playful
+    - designer_toy
+    - idol_support
+    text:
+    - latin
+    - short
+    - embedded_wordmark
+    - high_contrast
+    - 3d_glow
+  role_description: 'A soft collectible idol lightstick on pure black in a full-product 45-degree right-facing view. The lamp head uses a crescent red-panda mascot silhouette with ears, fluffy tail, flower/star charms, and a cream-yellow body rather than a circular badge. High-contrast short Latin text is embedded in the central plush-resin face. This image contributes: soft animal mascot silhouette, crescent side-swept non-round lamp head, fuzzy plush / soft vinyl material, readable high-contrast rounded wordmark.'
+- id: alpaca_cloud_plush
+  image: alpaca_cloud_plush.png
+  prompt: alpaca_cloud_plush.txt
+  quality: strong
+  fallback_safe: true
+  notes: 羊驼云朵 + 短绒软胶 + 天空蓝点缀;补充治愈宠物类
+  tags:
+    shape:
+    - alpaca
+    - animal
+    - mascot
+    - cloud_nameplate
+    - asymmetric_vertical
+    - soft_body
+    color:
+    - cream
+    - butter_yellow
+    - sky_blue
+    - soft_white
+    - warm_gold
+    material:
+    - plush_fabric
+    - velvet_flock
+    - silicone
+    - soft_vinyl
+    - translucent_resin
+    vibe:
+    - cute
+    - healing
+    - fluffy
+    - gentle
+    - soft
+    - idol_support
+    text:
+    - latin
+    - short
+    - embedded_wordmark
+    - high_contrast
+    - plush_soft
+  role_description: 'A fluffy alpaca-themed idol lightstick on pure black at a full-product 45-degree right-facing angle. The lamp head is an asymmetric vertical alpaca mascot perched on a soft cloud nameplate with small transparent blue fins and rounded toy proportions. This image contributes: fluffy alpaca pet-companion mood, cloud nameplate lamp-head structure, soft flock / silicone material language, clean short Latin wordmark inside a plush surface.'
+- id: donut_whale_dark_sweet
+  image: donut_whale_dark_sweet.png
+  prompt: donut_whale_dark_sweet.txt
+  quality: strong
+  notes: 甜甜圈鲸鱼 + 深紫糖霜 + 小鳍异形;补充食品动物融合
+  tags:
+    shape:
+    - whale
+    - animal
+    - donut
+    - food
+    - dessert
+    - food_animal_fusion
+    - fin
+    - shield_body
+    - non_round
+    color:
+    - graphite
+    - violet
+    - silver
+    - cream
+    - dark_purple
+    material:
+    - frosting_resin
+    - jelly_resin
+    - velvet_flock
+    - soft_vinyl
+    - translucent_resin
+    - matte_enamel
+    vibe:
+    - cute
+    - dark_sweet
+    - playful
+    - surreal
+    - designer_toy
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_wordmark
+    - high_contrast
+    - candy_emboss
+  role_description: 'A dark-sweet donut whale idol lightstick on pure black in a 45-degree right-facing product view. The lamp head fuses a rounded whale body, donut frosting rim, tail fins, flower cap, and a deep violet central text surface. This image contributes: food-animal fusion silhouette, dark graphite / violet sweet-toy palette, frosting resin and flocked soft texture, long readable Latin wordmark on a non-round core.'
+- id: pillow_ghost_squishy
+  image: pillow_ghost_squishy.png
+  prompt: pillow_ghost_squishy.txt
+  quality: strong
+  fallback_safe: true
+  notes: 枕头幽灵 + 薰衣草软垫 + 冰蓝透明薄翼;补充软糯幻想类
+  tags:
+    shape:
+    - ghost
+    - pillow
+    - squishy
+    - spiral_crest
+    - wing
+    - non_round
+    color:
+    - lavender
+    - icy_blue
+    - pearl_white
+    - pale_purple
+    material:
+    - silicone
+    - velvet_flock
+    - pearlescent_resin
+    - translucent_resin
+    - squishy_foam
+    vibe:
+    - cute
+    - dreamy
+    - soft
+    - whimsical
+    - gentle
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_wordmark
+    - high_contrast
+    - plush_soft
+  role_description: 'A squishy pillow ghost idol lightstick on pure black at a full-product 45-degree right-facing angle. The lamp head is a puffy lavender ghost cushion with folded corners, translucent icy fins, and a candy-stick handle. This image contributes: pillow-soft ghost silhouette, lavender / icy blue gentle palette, silicone cushion and velvet flock material, readable white-purple wordmark embedded in a soft body.'
+- id: rhino_sport_mascot
+  image: rhino_sport_mascot.png
+  prompt: rhino_sport_mascot.txt
+  quality: strong
+  notes: 橄榄球犀牛 + 蜂蜜棕运动皮革;补充球类/动物运动融合
+  tags:
+    shape:
+    - rhino
+    - rugby_ball
+    - animal
+    - sport_ball
+    - sport
+    - long_object_body
+    - horn
+    color:
+    - honey_amber
+    - brown
+    - vanilla
+    - chocolate
+    material:
+    - matte_leather
+    - soft_vinyl
+    - suede_texture
+    - translucent_resin
+    - matte_enamel
+    vibe:
+    - sporty
+    - cute_powerful
+    - warm
+    - playful
+    - collectible_toy
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_wordmark
+    - high_contrast
+    - athletic_logo
+  role_description: 'A rugby rhino idol lightstick on pure black in a 45-degree right-facing product view. The lamp head combines an elongated rugby-ball body, rhino horn, ears, laces, and honey-brown soft sport material. This image contributes: sports ball plus animal mascot fusion, long non-round lamp-head silhouette, soft leather / vinyl sport texture, high-contrast athletic Latin wordmark.'
+- id: snail_galaxy_charm
+  image: snail_galaxy_charm.png
+  prompt: snail_galaxy_charm.txt
+  quality: strong
+  fallback_safe: true
+  notes: 星河蜗牛 + 鼠尾草绿 + 螺旋壳叠层;补充慢萌奇想类
+  tags:
+    shape:
+    - snail
+    - animal
+    - galaxy
+    - shell
+    - spiral
+    - halo_arc
+    - stacked_charm
+    color:
+    - sage_green
+    - peach
+    - sand_cream
+    - pearl_white
+    material:
+    - pearlescent_lacquer
+    - soft_vinyl
+    - jelly_resin
+    - velvet_flock
+    - translucent_resin
+    vibe:
+    - dreamy
+    - gentle
+    - cute
+    - whimsical
+    - soft
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_wordmark
+    - high_contrast
+    - 3d_glow
+  role_description: 'A galaxy snail idol lightstick on pure black at a full-product 45-degree right-facing angle. The lamp head is a stacked charm tower with a spiral snail shell, halo arc, small moons, and a sage-green soft body. This image contributes: snail shell spiral silhouette, gentle sage / peach dream palette, pearlescent jelly and soft vinyl materials, long Latin wordmark following a rounded shell core.'
+- id: pocket_watch_vintage
+  image: pocket_watch_vintage.png
+  prompt: pocket_watch_vintage.txt
+  quality: strong
+  notes: 复古怀表 + 酒红海军蓝 + 倾斜图腾;补充物件类异形
+  tags:
+    shape:
+    - pocket_watch
+    - clock
+    - object_body
+    - tilted_capsule
+    - chain
+    - moon_chip
+    color:
+    - red
+    - cream
+    - navy
+    - antique_gold
+    - pearl
+    material:
+    - enamel
+    - pearlescent_resin
+    - soft_leather
+    - brushed_metal_trim
+    vibe:
+    - vintage
+    - magical
+    - elegant
+    - collectible
+    - stage
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_wordmark
+    - high_contrast
+    - vintage_logo
+  role_description: 'A vintage pocket-watch idol lightstick on pure black in a full-product 45-degree right-facing view. The lamp head is a tilted capsule totem built from a watch case, crown, moon chip, chain links, and a red/navy stage palette. This image contributes: object-led non-round watch silhouette, vintage enamel and soft leather treatment, red / cream / navy contrast, readable long Latin wordmark in a watch face.'
+- id: black_rabbit_gothic_soft
+  image: black_rabbit_gothic_soft.png
+  prompt: black_rabbit_gothic_soft.txt
+  quality: strong
+  notes: 黑兔 + 红黑暗甜 + 长耳异形;补充哥特软萌动物
+  tags:
+    shape:
+    - rabbit
+    - animal
+    - mascot
+    - long_ears
+    - asymmetric_vertical
+    - ribbon
+    color:
+    - black
+    - cherry_red
+    - cream
+    - gray_purple
+    - silver
+    material:
+    - velvet_flock
+    - plush_fabric
+    - soft_vinyl
+    - ribbon_textile
+    - translucent_resin
+    vibe:
+    - gothic_cute
+    - dark_sweet
+    - playful
+    - soft
+    - dramatic
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_wordmark
+    - high_contrast
+    - 3d_glow
+  role_description: 'A black rabbit idol lightstick on pure black at a full-product 45-degree right-facing angle. The lamp head uses long rabbit ears, dark plush surfaces, red ribbon accents, and a central high-contrast text face. This image contributes: dark cute animal mascot silhouette, long-ear non-round lamp-head structure, black velvet flock and red soft-vinyl contrast, readable cream wordmark on a dark body.'
+- id: gummy_frog_jelly
+  image: gummy_frog_jelly.png
+  prompt: gummy_frog_jelly.txt
+  quality: strong
+  fallback_safe: true
+  notes: 软糖青蛙 + 深紫果冻 + 凸眼双瓣;补充Q弹材质
+  tags:
+    shape:
+    - frog
+    - animal
+    - gummy
+    - double_lobed
+    - eye_bumps
+    - bat_wing
+    color:
+    - deep_purple
+    - smoke_black
+    - moon_silver
+    - candy_purple
+    material:
+    - jelly_resin
+    - silicone
+    - soft_vinyl
+    - translucent_resin
+    - matte_enamel
+    vibe:
+    - cute
+    - quirky
+    - gummy
+    - night_glow
+    - playful
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_wordmark
+    - high_contrast
+    - candy_emboss
+  role_description: 'A gummy frog idol lightstick on pure black in a 45-degree right-facing product view. The lamp head has two raised frog eyes, a squishy purple body, small wing-like side tabs, and glossy jelly thickness. This image contributes: gummy frog double-lobed silhouette, dark purple soft candy material, playful strange-cute mood, bright high-contrast wordmark embedded in jelly.'
+- id: goose_moon
+  image: goose_moon.png
+  prompt: goose_moon.txt
+  quality: strong
+  notes: 月牙鹅 + 海军蓝银白 + 清爽侧扫轮廓;补充水鸟动物
+  tags:
+    shape:
+    - goose
+    - bird
+    - animal
+    - crescent
+    - neck_curve
+    - moon
+    - side_swept
+    color:
+    - navy_blue
+    - moon_silver
+    - cool_white
+    - icy_blue
+    - warm_yellow
+    material:
+    - soft_vinyl
+    - silicone
+    - translucent_resin
+    - pearlescent_lacquer
+    vibe:
+    - clean
+    - playful
+    - sporty
+    - cute
+    - fresh
+    - idol_support
+    text:
+    - latin
+    - short
+    - embedded_wordmark
+    - high_contrast
+    - 3d_glow
+  role_description: 'A moon-goose idol lightstick on pure black at a full-product 45-degree right-facing angle. The lamp head turns a goose neck and body into a blue-silver crescent with wing plates, star details, and a compact handle. This image contributes: bird neck crescent silhouette, crisp navy / silver contrast, soft vinyl with translucent icy accents, short readable Latin wordmark.'
+- id: crab_soft_shell
+  image: crab_soft_shell.png
+  prompt: crab_soft_shell.txt
+  quality: strong
+  notes: 红蟹 + 双钳 + 红蓝高对比;补充海洋动物软胶
+  tags:
+    shape:
+    - crab
+    - animal
+    - sea_animal
+    - claws
+    - shell
+    - side_swept
+    - charm_cluster
+    color:
+    - red
+    - navy_blue
+    - electric_blue
+    - silver_white
+    material:
+    - soft_vinyl
+    - jelly_resin
+    - matte_enamel
+    - textile_wrap
+    vibe:
+    - playful
+    - energetic
+    - cute
+    - ocean
+    - bright
+    - idol_support
+    text:
+    - latin
+    - short
+    - embedded_wordmark
+    - high_contrast
+    - 3d_glow
+  role_description: 'A red crab idol lightstick on pure black in a 45-degree right-facing product view. The lamp head is a rounded crab shell with raised claws, blue star droplets, and a red-blue wrapped handle. This image contributes: crab claw non-round silhouette, bright red / blue animal palette, soft shell vinyl and jelly resin texture, high-contrast short Latin wordmark.'
+- id: billiard_eight_ball_club
+  image: billiard_eight_ball_club.png
+  prompt: billiard_eight_ball_club.txt
+  quality: strong
+  notes: 八号球俱乐部 + 球杆 + 蜂蜜棕皮革;补充球类运动物件
+  tags:
+    shape:
+    - billiard_ball
+    - eight_ball
+    - sport_ball
+    - sport
+    - cue
+    - club_badge
+    - object_body
+    color:
+    - honey_amber
+    - brown
+    - vanilla
+    - black
+    - antique_gold
+    material:
+    - phenolic_resin
+    - soft_leather
+    - matte_enamel
+    - brushed_metal_trim
+    vibe:
+    - vintage_sport
+    - club
+    - warm
+    - collectible
+    - playful
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_wordmark
+    - high_contrast
+    - vintage_logo
+  role_description: 'A billiard-club idol lightstick on pure black at a full-product 45-degree right-facing angle. The lamp head combines an eight ball, crossed cues, warm brown club trims, and a leather-wrapped handle rather than a simple round ball badge. This image contributes: sport object fusion, billiard ball and cue silhouette language, warm leather / resin material, readable long vintage Latin wordmark.'
+- id: frog_night_moon
+  image: frog_night_moon.png
+  prompt: frog_night_moon.txt
+  quality: strong
+  fallback_safe: true
+  notes: 深蓝星月蛙 + 软弹夜光;补充青蛙动物与冷色高对比
+  tags:
+    shape:
+    - frog
+    - animal
+    - crescent
+    - star
+    - moon
+    - side_swept
+    color:
+    - navy_blue
+    - moon_silver
+    - electric_blue
+    - cool_white
+    material:
+    - soft_vinyl
+    - silicone
+    - translucent_resin
+    - matte_enamel
+    vibe:
+    - cute
+    - night_glow
+    - playful
+    - sporty
+    - soft
+    - idol_support
+    text:
+    - latin
+    - short
+    - embedded_wordmark
+    - high_contrast
+    - 3d_glow
+  role_description: 'A night-frog idol lightstick on pure black in a full-product 45-degree right-facing view. The lamp head uses a crescent frog body, raised eyes, star beads, and a navy/electric-blue glowing core. This image contributes: frog plus star-moon silhouette, dark blue soft-vinyl material, sporty cute night mood, short bright wordmark on a dark body.'
+- id: duck_dodgeball_sport
+  image: duck_dodgeball_sport.png
+  prompt: duck_dodgeball_sport.txt
+  quality: strong
+  fallback_safe: true
+  notes: 躲避球小鸭 + 阳光黄软胶 + 长形运动主体;补充球类可爱款
+  tags:
+    shape:
+    - duck
+    - bird
+    - animal
+    - dodgeball
+    - sport_ball
+    - sport
+    - long_object_body
+    - wave
+    color:
+    - sun_yellow
+    - leaf_green
+    - white
+    - orange
+    material:
+    - soft_vinyl
+    - matte_rubber
+    - velvet_flock
+    - jelly_resin
+    vibe:
+    - sporty
+    - bright
+    - cute
+    - playful
+    - friendly
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_wordmark
+    - high_contrast
+    - athletic_logo
+  role_description: 'A dodgeball duck idol lightstick on pure black at a 45-degree right-facing product angle. The lamp head turns a yellow duck and dodgeball markings into a long soft sport-toy body with green accents. This image contributes: ball-sport animal fusion, long readable product silhouette, soft rubber / vinyl material, bright high-contrast athletic wordmark.'
+- id: gecko_tail_handle
+  image: gecko_tail_handle.png
+  prompt: gecko_tail_handle.txt
+  quality: strong
+  notes: 壁虎卷尾即握柄 + 蓝银夜光;补充整棒一体化动物结构
+  tags:
+    shape:
+    - gecko
+    - lizard
+    - animal
+    - tail_curl
+    - arched_handle
+    - full_body
+    color:
+    - navy_blue
+    - moon_silver
+    - electric_blue
+    - cool_white
+    material:
+    - silicone
+    - soft_vinyl
+    - translucent_resin
+    - pearlescent_lacquer
+    vibe:
+    - agile
+    - night_glow
+    - sporty
+    - cute_cool
+    - playful
+    - idol_support
+    text:
+    - latin
+    - short
+    - embedded_wordmark
+    - high_contrast
+    - 3d_glow
+  role_description: 'A gecko idol lightstick on pure black in a full-product 45-degree right-facing view. The gecko body curls around the lamp head while its tail becomes the handle, with suction-pad feet and blue night-glow accents. This image contributes: full-body animal-as-stick structure, tail-as-handle silhouette logic, soft silicone / vinyl texture, bright wordmark inside a dark blue core.'
+- id: meerkat_watchful_plush
+  image: meerkat_watchful_plush.png
+  prompt: meerkat_watchful_plush.txt
+  quality: strong
+  notes: 站立狐獴 + 红奶油海军蓝 + 绒毛条纹;补充竖向小动物
+  tags:
+    shape:
+    - meerkat
+    - animal
+    - mascot
+    - standing_body
+    - spiral_crest
+    - stripe
+    color:
+    - red
+    - cream
+    - navy_blue
+    - tan
+    - silver_white
+    material:
+    - plush_fabric
+    - velvet_flock
+    - soft_vinyl
+    - textile_wrap
+    - matte_enamel
+    vibe:
+    - cute
+    - alert
+    - warm
+    - playful
+    - soft
+    - idol_support
+    text:
+    - latin
+    - short
+    - embedded_wordmark
+    - high_contrast
+    - plush_soft
+  role_description: 'A watchful meerkat idol lightstick on pure black at a 45-degree right-facing product angle. The lamp head is a standing meerkat mascot with rounded ears, stripe body, small wing plates, and a red/navy candy handle. This image contributes: vertical small-animal mascot structure, plush fur and textile stripe material, warm red / cream / navy palette, high-contrast short Latin wordmark.'
+- id: churro_wand_dark_sweet
+  image: churro_wand_dark_sweet.png
+  prompt: churro_wand_dark_sweet.txt
+  quality: strong
+  notes: 吉拿魔杖 + 酒红果酱 + 砂糖颗粒;补充食品魔法道具
+  tags:
+    shape:
+    - churro
+    - food
+    - dessert
+    - wand
+    - tilted_capsule
+    - dessert_bundle
+    - star
+    color:
+    - black
+    - wine_red
+    - soft_silver
+    - cocoa_brown
+    - sugar_white
+    material:
+    - sugar_grain_texture
+    - matte_resin
+    - jelly_resin
+    - soft_vinyl
+    - enamel
+    vibe:
+    - dark_sweet
+    - magical
+    - dessert
+    - playful
+    - stage
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_wordmark
+    - high_contrast
+    - candy_emboss
+  role_description: 'A dark-sweet churro wand idol lightstick on pure black in a 45-degree right-facing product view. The lamp head is built from churro sticks, sugar crystals, wine-red jelly droplets, and a compact wand handle. This image contributes: dessert-as-magic-wand silhouette, sugar grain and jelly material cues, black / wine red contrast, readable long candy-style Latin wordmark.'
+- id: lychee_pearl_jelly
+  image: lychee_pearl_jelly.png
+  prompt: lychee_pearl_jelly.txt
+  quality: strong
+  fallback_safe: true
+  notes: 荔枝珍珠 + 粉白青柠 + 果冻花瓣;补充食品水果软萌
+  tags:
+    shape:
+    - lychee
+    - pearl
+    - fruit
+    - food
+    - flower_petals
+    - shield_body
+    - leaf
+    color:
+    - lime
+    - white
+    - bubblegum_pink
+    - pearl
+    - pale_yellow
+    material:
+    - jelly_resin
+    - pearlescent_resin
+    - velvet_flock
+    - silicone
+    - translucent_resin
+    vibe:
+    - sweet
+    - fresh
+    - cute
+    - soft
+    - fruity
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_wordmark
+    - high_contrast
+    - candy_emboss
+  role_description: 'A lychee pearl idol lightstick on pure black at a full-product 45-degree right-facing view. The lamp head looks like a peeled lychee with pink soft fruit petals, a pearl-white core, lime leaves, and a slim soft handle. This image contributes: fruit flower-petal lamp-head silhouette, fresh lime / pink / pearl palette, jelly fruit resin and velvet skin texture, long readable candy-style wordmark.'
+- id: fire_plush_torch
+  image: fire_plush_torch.jpg
+  prompt: fire_plush_torch.txt
+  quality: strong
+  fallback_safe: true
+  notes: 毛绒火把 + Torch 蓝色刺绣 + 木质握柄;补充火焰/布偶/手作材质
+  tags:
+    shape:
+    - fire
+    - flame
+    - torch
+    - plush
+    - mascot
+    - soft_texture
+    - handheld_prop
+    color:
+    - red
+    - orange
+    - yellow
+    - blue
+    - wood_brown
+    - warm
+    material:
+    - plush_fabric
+    - knitted_textile
+    - embroidery
+    - velvet_flock
+    - wood
+    vibe:
+    - warm
+    - energetic
+    - playful
+    - cute
+    - handcrafted
+    - idol_support
+    text:
+    - latin
+    - short
+    - embroidered_text
+    - high_contrast
+    - stitched_wordmark
+  role_description: 'A plush torch idol lightstick on pure black in a full-product 45-degree right-facing view. The lamp head is a rounded fabric flame with red-orange outer fire shapes, a yellow center, blue embroidered short Latin text, two tiny flame mascots, and a real wood handle. This image contributes: soft flame / torch silhouette, plush and knitted textile material, embroidered high-contrast wordmark, warm handcrafted prop identity with a wood grip.'
+- id: pilot_mic_aviator
+  image: pilot_mic_aviator.jpg
+  prompt: pilot_mic_aviator.txt
+  quality: strong
+  notes: 飞行员护目镜 + 麦克风角色 + Gokin 名牌;补充复古播报/航空潮玩
+  tags:
+    shape:
+    - pilot
+    - aviator
+    - goggles
+    - helmet
+    - microphone
+    - mascot
+    - nameplate
+    color:
+    - sky_blue
+    - lime
+    - coral
+    - cream
+    - silver
+    - antique_gold
+    material:
+    - soft_vinyl
+    - plush_fabric
+    - clear_lens
+    - brushed_metal_trim
+    - soft_emissive_panel
+    vibe:
+    - retro
+    - playful
+    - quirky
+    - aviation
+    - broadcast
+    - idol_support
+    text:
+    - latin
+    - short
+    - embedded_wordmark
+    - high_contrast
+    - 3d_glow
+  role_description: 'A playful aviator microphone idol lightstick on pure black at a full-product 45-degree right-facing angle. The lamp head reads as a cute pilot character with goggles, a plush flight cap, microphone grille, coral lips, and a glowing front nameplate. This image contributes: pilot / aviation mascot silhouette, goggles and microphone-face structure, plush cap plus clear lens material contrast, readable short Latin wordmark on a nameplate.'
+- id: elephant_gaga_plush
+  image: elephant_gaga_plush.jpg
+  prompt: elephant_gaga_plush.txt
+  quality: strong
+  fallback_safe: true
+  notes: 毛绒大象耳朵 + 暖黄光球 + Gaga 手写字;补充动物/针织/治愈软材质
+  tags:
+    shape:
+    - elephant
+    - animal
+    - mascot
+    - big_ears
+    - trunk
+    - orb
+    - soft_body
+    color:
+    - warm_yellow
+    - gray
+    - pink
+    - blue
+    - cream
+    - gold
+    material:
+    - plush_fabric
+    - knitted_textile
+    - soft_vinyl
+    - soft_emissive_panel
+    - velvet_flock
+    vibe:
+    - cute
+    - soft
+    - healing
+    - gentle
+    - playful
+    - idol_support
+    text:
+    - latin
+    - short
+    - embedded_wordmark
+    - high_contrast
+    - script_wordmark
+  role_description: 'A plush elephant idol lightstick on pure black in a full-product 45-degree right-facing view. The lamp head has a warm yellow glowing orb center, oversized gray-pink fuzzy elephant ears, a blue knitted trunk, small tusks, and a soft knitted handle. This image contributes: elephant ears as the lamp-head silhouette, warm orb core with soft handwritten Latin text, plush and knitted textile material, gentle healing animal-mascot identity.'
+- id: basketball_tiger_sport
+  image: basketball_tiger_sport.png
+  prompt: basketball_tiger_sport.txt
+  quality: strong
+  fallback_safe: true
+  notes: 篮球虎头 + Hoop Roar + 橙色软胶运动潮玩;补充篮球/动物运动融合
+  tags:
+    shape:
+    - basketball
+    - tiger
+    - animal
+    - sport_ball
+    - sport
+    - mascot
+    - ear
+    - stripe
+    color:
+    - orange
+    - cream
+    - sky_blue
+    - brown
+    - black
+    material:
+    - soft_vinyl
+    - matte_rubber
+    - felt_fabric
+    - matte_enamel
+    - velvet_flock
+    vibe:
+    - sporty
+    - playful
+    - bold
+    - cute
+    - energetic
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_wordmark
+    - high_contrast
+    - athletic_logo
+  role_description: 'A basketball tiger idol lightstick on pure black in a full-product 45-degree right-facing view. The lamp head turns a basketball into a rounded tiger-head mascot with ear bumps, cheek stripes, a padded sweatband neck, and orange soft sport-toy material. This image contributes: basketball plus tiger mascot fusion, sport-ball silhouette broken by animal ears and stripes, soft vinyl / matte rubber tactile finish, readable long athletic Latin wordmark.'
+- id: aurora_bunny_plush
+  image: aurora_bunny_plush.png
+  prompt: aurora_bunny_plush.txt
+  quality: strong
+  fallback_safe: true
+  notes: 极光兔耳 + Aurora Bunny Core + 薰衣草粉蓝软萌;补充兔耳/梦幻软材质
+  tags:
+    shape:
+    - bunny
+    - rabbit
+    - animal
+    - bunny_ear
+    - long_ears
+    - mascot
+    - cloud
+    - ribbon
+    color:
+    - lavender
+    - pink
+    - icy_blue
+    - pearl_white
+    - purple
+    material:
+    - frosted_resin
+    - pearlescent_lacquer
+    - soft_vinyl
+    - velvet_flock
+    - silicone
+    vibe:
+    - dreamy
+    - soft
+    - sweet
+    - cute
+    - gentle
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_wordmark
+    - high_contrast
+    - plush_soft
+  role_description: 'A dreamy aurora bunny idol lightstick on pure black at a full-product 45-degree right-facing angle. The lamp head is built from tall plush bunny ears, a lavender cloud-like core, icy blue side fins, star details, and a soft aurora ribbon wrap. This image contributes: long bunny-ear vertical silhouette, lavender / pink / icy-blue dream palette, frosted resin plus velvet-soft material, long readable Latin wordmark embedded in a cloud core.'
+- id: tennis_frog_sport
+  image: tennis_frog_sport.png
+  prompt: tennis_frog_sport.txt
+  quality: strong
+  fallback_safe: true
+  notes: 网球青蛙 + Tennis Frog Core + 网球绒面凸眼;补充网球/青蛙运动款
+  tags:
+    shape:
+    - tennis_ball
+    - tennis
+    - frog
+    - animal
+    - sport_ball
+    - sport
+    - eye_bumps
+    - court_stripe
+    color:
+    - tennis_yellow
+    - leaf_green
+    - green
+    - white
+    - olive
+    material:
+    - velvet_flock
+    - soft_vinyl
+    - matte_rubber
+    - translucent_resin
+    - matte_enamel
+    vibe:
+    - sporty
+    - playful
+    - cute
+    - soft
+    - bright
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_wordmark
+    - high_contrast
+    - athletic_logo
+  role_description: 'A tennis frog idol lightstick on pure black in a 45-degree right-facing product view. The lamp head fuses a fuzzy tennis ball with raised frog-eye domes, curved court-stripe inlays, leaf-green side accents, and a compact sport handle. This image contributes: tennis ball plus frog-face silhouette, sport-ball texture with animal eye bumps, fuzzy flocked tennis material, long high-contrast athletic Latin wordmark.'
+- id: crystal_drake_scale
+  image: crystal_drake_scale.png
+  prompt: crystal_drake_scale.txt
+  quality: strong
+  notes: 晶鳞小龙 + Scale Light + 祖母绿龙鳞盾形;补充龙/鳞片/幻想装备
+  tags:
+    shape:
+    - dragon
+    - drake
+    - scale
+    - horn
+    - crest
+    - shield
+    - angular_fin
+    - fantasy
+    color:
+    - emerald
+    - green
+    - silver
+    - violet
+    - smoke_black
+    - cool_white
+    material:
+    - cut_crystal
+    - crystal_core
+    - smoked_resin
+    - glossy_resin
+    - metallic_trim
+    vibe:
+    - fantasy
+    - bold
+    - dramatic
+    - mysterious
+    - stage
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_wordmark
+    - high_contrast
+    - 3d_glow
+  role_description: 'A crystal drake idol lightstick on pure black at a full-product 45-degree right-facing angle. The lamp head is a dragon-scale shield body with horn crest, angular side fins, emerald smoked-resin layers, and a glowing central core. This image contributes: dragon scale shield silhouette, horn and crest fantasy equipment language, emerald crystal / smoked resin material, readable long Latin wordmark in a glowing core.'
+- id: sunflower_bee_hive
+  image: sunflower_bee_hive.png
+  prompt: sunflower_bee_hive.txt
+  quality: strong
+  fallback_safe: true
+  notes: 向日葵蜜蜂 + Sunny Hive + 黄色花瓣蜂蜜软胶;补充花朵/蜜蜂/温暖治愈
+  tags:
+    shape:
+    - sunflower
+    - flower
+    - bee
+    - wing
+    - petal
+    - honey_drop
+    - hive
+    - mascot
+    color:
+    - sun_yellow
+    - yellow
+    - warm_brown
+    - cream
+    - honey_gold
+    - orange
+    material:
+    - soft_vinyl
+    - pearlescent_resin
+    - soft_enamel
+    - translucent_resin
+    - velvet_flock
+    vibe:
+    - warm
+    - sweet
+    - healing
+    - playful
+    - cute
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_wordmark
+    - high_contrast
+    - rounded_wordmark
+  role_description: 'A sunflower bee idol lightstick on pure black in a 45-degree right-facing product view. The lamp head is a cushioned sunflower petal crown with a honey-glow center, small bee-wing side pads, honey-drop details, and a warm cream-yellow handle. This image contributes: sunflower petal crown silhouette, bee wing and honey-drop support details, warm yellow/brown soft material world, readable long rounded Latin wordmark.'
+- id: bowling_penguin_sport
+  image: bowling_penguin_sport.png
+  prompt: bowling_penguin_sport.txt
+  quality: strong
+  fallback_safe: true
+  notes: 保龄企鹅 + Pin Slide + 黑白薄荷软胶;补充保龄球/企鹅/竖向运动主体
+  tags:
+    shape:
+    - bowling
+    - bowling_ball
+    - bowling_pin
+    - penguin
+    - bird
+    - animal
+    - sport_ball
+    - sport
+    color:
+    - black
+    - snow_white
+    - white
+    - mint
+    - gray
+    material:
+    - soft_vinyl
+    - felt_fabric
+    - velvet_flock
+    - glossy_ball_inlay
+    - silicone
+    vibe:
+    - sporty
+    - playful
+    - soft
+    - cute
+    - designer_toy
+    - idol_support
+    text:
+    - latin
+    - long
+    - embedded_wordmark
+    - high_contrast
+    - 3d_glow
+  role_description: 'A bowling penguin idol lightstick on pure black at a full-product 45-degree right-facing angle. The lamp head turns a bowling-pin body into a penguin mascot with wing pads, a glossy bowling-ball belly inlay, black-and-white soft surfaces, and mint glow accents. This image contributes: bowling pin plus penguin vertical silhouette, sport object fused with animal mascot, felt / soft vinyl with glossy ball inlay contrast, readable long Latin wordmark.'
+- id: sticker_ghost_soft
+  image: sticker_ghost_soft.png
+  prompt: sticker_ghost_soft.txt
+  quality: strong
+  fallback_safe: true
+  notes: 贴纸幽灵 + Boo Pop + 奶白薰衣草软布;补充幽灵/贴纸/软糯幻想
+  tags:
+    shape:
+    - ghost
+    - sticker
+    - star
+    - blanket_fold
+    - wavy_edge
+    - soft_body
+    - mascot
+    color:
+    - milk_white
+    - white
+    - lavender
+    - lemon_yellow
+    - pearl_pink
+    - pale_blue
+    material:
+    - soft_vinyl
+    - velvet_flock
+    - squishy_foam
+    - silicone
+    - soft_emissive_panel
+    vibe:
+    - dreamy
+    - playful
+    - sweet
+    - cute
+    - soft
+    - idol_support
+    text:
+    - latin
+    - short
+    - embedded_wordmark
+    - high_contrast
+    - plush_soft
+  role_description: 'A sticker ghost idol lightstick on pure black in a full-product 45-degree right-facing view. The lamp head is a milk-white soft ghost with rounded blanket folds, a wavy lower edge, sticker-star cheeks, lavender handle details, and a warm central text area. This image contributes: soft sheet-ghost silhouette, sticker star and wavy blanket-fold details, squishy foam / velvet soft material, short high-contrast playful Latin wordmark.'

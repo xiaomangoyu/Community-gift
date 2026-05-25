@@ -173,6 +173,35 @@ python -m community_gift.cli \
 
 不要在主工作流里使用 `1024x1792` 这类竖图比例；竖图只适合旧 reference 单项测试，不适合作为主播礼物历史数据。
 
+### Reference 路由和 tag 兜底
+
+reference image 的选择是一个本地 deterministic 节点，不依赖线上模型。主链路是：
+
+```text
+HostInput / VLM vision
+  -> HostBrief tags
+  -> RetrievalIntent anchors
+  -> tag_aliases.yaml 归一化和父级扩展
+  -> ReferenceRouter 加权精确匹配
+  -> top-N reference image + role_description
+```
+
+相关文件：
+
+- `references/imgs/manifest.yaml`：reference 入库清单，决定每张图的 canonical tags、图片、prompt 和 `role_description`。
+- `references/imgs/TAG_VOCAB.md`：canonical tag 词表。新增 manifest tag 时优先从这里选。
+- `references/imgs/tag_aliases.yaml`：同义词和父级兜底。比如 `bunny -> rabbit`，`basketball -> sport_ball -> sport`。
+- `community_gift/routing/tag_normalizer.py`：加载 `tag_aliases.yaml`，在 router 打分前同时处理主播 tags 和 manifest tags。
+- `community_gift/routing/reference_router.py`：仍然只做精确交集打分；兜底层只改变进入打分的 tag 集合，不改 prompt、不改图片、不调用网络。
+
+维护原则：
+
+- manifest 里尽量写干净的 canonical tags，不要为每张图重复塞大量同义词。
+- 新增高频别名、中文词、模型可能吐出的近义词时，优先改 `tag_aliases.yaml`。
+- 新增大类兜底时要保守：适合 `rabbit -> animal`、`basketball -> sport_ball` 这种稳定父级；不要把主观风格随意互相映射。
+- 排查错配时先看 `outputs/.../contact_sheet_debug.jpg` 和 `routing_trace.json` 里的 `matched_tags` / `score`，再决定是补 manifest tag 还是补 alias。
+- 云端服务如果长进程常驻，更新 `tag_aliases.yaml` / `manifest.yaml` 后需要重启进程，让本地 YAML 配置重新加载。
+
 ### 抠图颜色约定
 
 主流程可以继续使用纯黑背景，但产品本体不能再使用纯黑作为大面积主色。即使主播字段里写了黑色、黑鸟、glossy black resin，也只作为主题语义处理，实际产品外壳、手柄、轮廓和大面积装饰必须转成烟灰、枪灰、银灰、珠光灰、奶油白或彩色树脂，并保留清楚的灰/银/彩色边缘高光，方便后续从黑底抠图。

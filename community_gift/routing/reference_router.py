@@ -26,6 +26,7 @@ from typing import Any
 import yaml
 
 from .base import RouteDecision, RouteTraceEntry
+from .tag_normalizer import normalize_tag, normalize_tag_map
 
 
 REFERENCE_MANIFEST_PATH = (
@@ -83,7 +84,7 @@ class ReferenceRouter:
                 trace=[],
             )
 
-        host_signals = _extract_host_signals(context)
+        host_signals = normalize_tag_map(_extract_host_signals(context))
         avoid_text_scripts = _avoid_text_scripts(context)
         scored: list[tuple[float, dict[str, list[str]], dict[str, Any]]] = []
         trace: list[RouteTraceEntry] = []
@@ -176,6 +177,7 @@ def _load_manifest(path: Path) -> list[dict[str, Any]]:
         if not entry.get("id"):
             continue
         entry = dict(entry)
+        entry["_normalized_tags"] = normalize_tag_map(entry.get("tags") or {})
         if entry.get("image"):
             entry["_resolved_image_path"] = str((path.parent / entry["image"]).resolve())
         else:
@@ -225,7 +227,7 @@ def _dedupe(values: list[str]) -> list[str]:
 
 
 def _score(entry: dict[str, Any], host_signals: dict[str, list[str]]) -> tuple[float, dict[str, list[str]]]:
-    ref_tags = entry.get("tags") or {}
+    ref_tags = entry.get("_normalized_tags") or entry.get("tags") or {}
     semantic_score = 0.0
     matched: dict[str, list[str]] = {}
     for dim, weight in WEIGHTS.items():
@@ -364,15 +366,23 @@ def _find_reference(
 
 def _avoid_text_scripts(context: dict[str, Any]) -> set[str]:
     intent = context.get("intent") or {}
-    return {str(tag).lower().strip() for tag in intent.get("avoid_text_scripts") or []}
+    return {
+        tag
+        for tag in (normalize_tag(str(raw)) for raw in intent.get("avoid_text_scripts") or [])
+        if tag
+    }
 
 
 def _has_avoided_text_script(entry: dict[str, Any], avoid_text_scripts: set[str]) -> bool:
     if not avoid_text_scripts:
         return False
     text_tags = {
-        str(tag).lower().strip()
-        for tag in (entry.get("tags") or {}).get("text", [])
+        tag
+        for tag in (
+            normalize_tag(str(raw))
+            for raw in (entry.get("_normalized_tags") or entry.get("tags") or {}).get("text", [])
+        )
+        if tag
     }
     return bool(text_tags & avoid_text_scripts)
 

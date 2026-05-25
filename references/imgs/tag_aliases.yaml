@@ -1,0 +1,354 @@
+# Reference routing tag aliases.
+#
+# The router still scores exact tag intersections. This file only normalizes
+# common input variants before scoring, on both host signals and manifest tags.
+#
+# aliases:
+#   canonical_tag: [raw variants that should mean the same tag]
+# parents:
+#   specific_tag: [broader bridge tags added after canonicalization]
+
+version: 1
+
+aliases:
+  animal:
+    - creature
+    - pet
+    - 动物
+  cat:
+    - feline
+    - panther
+    - pantera
+    - panteras
+    - black_panther
+    - 黑豹
+  rabbit:
+    - bunny
+    - hare
+    - 兔子
+    - 兔兔
+  bird:
+    - avian
+    - feathered
+    - 鸟
+    - 鸟类
+  eagle:
+    - falcon
+    - hawk
+    - 猎鹰
+    - 鹰
+  dragon:
+    - drake
+    - 龙
+  frog:
+    - toad
+    - 青蛙
+  penguin:
+    - 企鹅
+  elephant:
+    - 大象
+  crab:
+    - 螃蟹
+  bee:
+    - honeybee
+    - 蜜蜂
+  flower:
+    - floral
+    - bloom
+    - 花
+  sunflower:
+    - 向日葵
+  food:
+    - snack
+    - treat
+    - 食物
+    - 美食
+  fruit:
+    - fruity
+    - 水果
+  dessert:
+    - candy
+    - sweet_food
+    - 甜点
+  sport:
+    - sports
+    - athletic
+    - 运动
+  sport_ball:
+    - ball_sport
+    - 球类
+  globe:
+    - earth
+    - world
+    - planet
+    - 地球
+  turntable:
+    - dj
+    - record
+    - 唱盘
+  badge:
+    - 徽章
+  police_badge:
+    - 警徽
+    - police_badge
+    - police
+    - lieutenant
+  star:
+    - 星芒
+  crown:
+    - 皇冠
+    - 王冠
+  headphones:
+    - headset
+    - 耳机
+  panda:
+    - 熊猫
+  perfume_bottle:
+    - perfume
+    - parfum
+    - 香水瓶
+  chain:
+    - 金链
+  volcano:
+    - lava
+    - 火山
+  crossed_fingers:
+    - 交叉手指
+  dome:
+    - 圆顶
+    - 穹顶
+    - 圆顶穹顶
+  flag:
+    - 旗帜
+  baseball_cap:
+    - cap
+    - 鸭舌帽
+  basketball:
+    - 篮球
+  tennis_ball:
+    - tennis
+    - 网球
+  bowling_ball:
+    - bowling
+    - 保龄球
+  billiard_ball:
+    - eight_ball
+    - pool_ball
+    - billiard
+    - 台球
+  mascot:
+    - character
+    - chibi
+    - 吉祥物
+  ghost:
+    - spirit
+    - 幽灵
+  non_round:
+    - irregular_shape
+    - asymmetrical
+    - 异形
+  soft_body:
+    - soft_blocky_silhouette
+    - squishy_body
+    - round_soft_body
+  long_object_body:
+    - elongated
+    - wand_like
+  purple:
+    - violet
+    - lavender
+    - royal_purple
+  blue:
+    - royal_blue
+    - sky_blue
+  green:
+    - leaf_green
+    - emerald
+  yellow:
+    - warm_yellow
+    - electric_yellow
+    - tennis_yellow
+  red:
+    - crimson_red
+    - cherry_red
+  orange:
+    - lava_orange
+  white:
+    - pearl_white
+    - cool_white
+  gold:
+    - champagne
+    - honey_amber
+  silver:
+    - moon_silver
+  soft_vinyl:
+    - vinyl
+    - toy_vinyl
+  plush_fabric:
+    - plush
+    - furry
+    - fluffy
+    - 毛绒
+    - 绒毛
+  velvet_flock:
+    - flocked
+    - velvet
+    - 植绒
+  jelly_resin:
+    - jelly
+    - gel_resin
+    - jelly_material
+    - gummy_material
+    - 果冻材质
+    - 果冻
+  translucent_resin:
+    - transparent_resin
+    - clear_resin
+  pearlescent_resin:
+    - pearl_resin
+  pearlescent_lacquer:
+    - pearl_lacquer
+    - pearly
+  matte_enamel:
+    - matte
+    - enamel
+  silicone:
+    - soft_silicone
+    - 硅胶
+  squishy_foam:
+    - foam
+    - soft_foam
+  metallic_trim:
+    - metal
+    - metallic
+    - metal_trim
+    - polished_metal
+  brushed_metal:
+    - brushed_aluminum
+    - brushed_metal_trim
+  enamel:
+    - enameled_metal
+  cute:
+    - kawaii
+    - adorable
+    - cute_collectible
+    - 可爱
+    - 萌
+  soft:
+    - gentle
+    - cozy
+    - soft_tactile
+    - 软萌
+    - 柔软
+  playful:
+    - fun
+    - whimsical
+    - playful_retro
+    - bright_friendly
+    - 俏皮
+  dreamy:
+    - fantasy_dream
+    - 梦幻
+  sporty:
+    - energetic_sport
+    - active
+  retro:
+    - vintage
+    - 复古
+  mysterious:
+    - gothic
+    - dark_mystery
+  high_contrast:
+    - contrast_text
+    - readable_text
+
+parents:
+  rabbit:
+    - animal
+    - soft_body
+  cat:
+    - animal
+  panther:
+    - cat
+    - animal
+  frog:
+    - animal
+    - soft_body
+  penguin:
+    - bird
+    - animal
+  bird:
+    - animal
+  eagle:
+    - bird
+    - animal
+  dragon:
+    - animal
+    - fantasy
+  elephant:
+    - animal
+    - soft_body
+  crab:
+    - animal
+  panda:
+    - animal
+  bee:
+    - animal
+  sunflower:
+    - flower
+  globe:
+    - sphere
+    - badge
+  turntable:
+    - object_body
+  badge:
+    - object_body
+  police_badge:
+    - badge
+    - object_body
+  perfume_bottle:
+    - object_body
+  chain:
+    - object_body
+  volcano:
+    - fire
+  dome:
+    - sphere
+    - object_body
+  flag:
+    - badge
+  baseball_cap:
+    - hat
+  lychee:
+    - fruit
+    - food
+  cherry:
+    - fruit
+    - food
+  melon:
+    - fruit
+    - food
+  donut:
+    - dessert
+    - food
+  churro:
+    - dessert
+    - food
+    - long_object_body
+  gummy:
+    - dessert
+    - food
+  basketball:
+    - sport_ball
+    - sport
+  tennis_ball:
+    - sport_ball
+    - sport
+  bowling_ball:
+    - sport_ball
+    - sport
+  billiard_ball:
+    - sport_ball
+    - sport
+  boxing_glove:
+    - sport
