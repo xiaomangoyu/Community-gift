@@ -13,8 +13,8 @@
       "id": "black_safe",
       "name": "Black Theme Safe Product Palette",
       "main_color": "烟灰",
-      "palette": ["烟灰", "枪灰银", "冷白", "少量金属银", "一处主题色高光"],
-      "materials": ["烟灰半透明树脂", "枪灰珠光漆面", "冷白晶体内芯", "镜面银色细包边"],
+      "palette": ["烟灰", "枪灰银灰", "冷白", "少量低反射银灰", "一处主题色高光"],
+      "materials": ["烟灰哑光软搪胶", "枪灰丝绒触感涂层", "冷白软发光树脂", "极薄低反射银灰饰边"],
       "match_terms": ["黑", "black", "暗", "夜色", "dark"],
       "avoid": ["纯黑大面积棒身", "黑色手柄贴黑底", "无边缘高光"]
     },
@@ -22,8 +22,8 @@
       "id": "wing_dark_pink",
       "name": "Dark Wing Pink Stage Palette",
       "main_color": "烟灰",
-      "palette": ["烟灰", "枪灰银", "亮粉", "冷白", "少量金属银"],
-      "materials": ["烟灰半透明树脂", "亮粉珐琅", "冷白晶体内芯", "镜面银色细包边"],
+      "palette": ["烟灰", "枪灰银灰", "亮粉", "冷白", "少量低反射银灰"],
+      "materials": ["烟灰短绒植绒", "亮粉柔雾珐琅", "冷白软发光树脂", "极薄低反射银灰饰边"],
       "match_terms": ["鸟", "bird", "羽", "翼", "wing", "闪电", "electric"],
       "avoid": ["真实鸟照片", "纯黑羽毛糊成一片", "过多闪电贴纸"]
     },
@@ -32,7 +32,7 @@
       "name": "Warm Potato Mascot Palette",
       "main_color": "土豆金黄",
       "palette": ["土豆金黄", "暖棕", "奶油白", "少量霓虹蓝"],
-      "materials": ["柔软玩具树脂", "奶油白珐琅", "半透明果冻晶体", "克制金属包边"],
+      "materials": ["雾面软搪胶", "奶油白柔雾珐琅", "柔软果冻树脂", "短绒颗粒涂层"],
       "match_terms": ["土豆", "potato", "spud", "圆润", "mascot"],
       "avoid": ["真实食物照片", "产品说明卡", "竞猜节目 UI 图"]
     },
@@ -41,7 +41,7 @@
       "name": "Crown Neon Stage Palette",
       "main_color": "霓虹蓝",
       "palette": ["霓虹蓝", "热粉", "香槟金", "冷白", "少量银灰"],
-      "materials": ["高光珐琅", "金属皇冠细包边", "发光晶体核心", "霓虹能量镶嵌"],
+      "materials": ["珠光软搪胶", "高饱和柔雾珐琅", "软发光树脂核心", "极薄低反射金色饰边"],
       "match_terms": ["皇冠", "crown", "queen", "king", "rey", "竞技", "battle"],
       "avoid": ["文字写在皇冠上", "武器化尖刺", "过多电竞 UI"]
     },
@@ -50,7 +50,7 @@
       "name": "Butterfly Purple Pearl Palette",
       "main_color": "紫色",
       "palette": ["紫色", "薰衣草紫", "珠光白", "淡粉", "少量银白"],
-      "materials": ["珠光树脂", "半透明果冻晶体", "淡粉珐琅", "银白细包边"],
+      "materials": ["珠光软搪胶", "半透明柔雾果冻树脂", "淡粉柔雾珐琅", "极薄银白软质包边"],
       "match_terms": ["蝴蝶", "butterfly", "나비", "紫", "purple", "梦幻", "温柔"],
       "avoid": ["纸片翅膀", "过曝白光", "伪韩文字"]
     },
@@ -59,7 +59,7 @@
       "name": "Hat Brim Vintage Palette",
       "main_color": "珊瑚红",
       "palette": ["珊瑚红", "奶油金", "珠光白", "香槟金", "烟灰"],
-      "materials": ["亮面珐琅", "珠光树脂", "香槟金属包边", "半透明晶体内芯"],
+      "materials": ["短绒布艺包覆", "珠光软搪胶", "香槟色柔雾珐琅", "小范围半透明软发光核心"],
       "match_terms": ["帽", "hat", "sombrero", "fedora", "patrona", "rooster", "公鸡"],
       "avoid": ["农场场景", "真实公鸡照片", "大翅膀抢帽檐"]
     },
@@ -68,7 +68,7 @@
       "name": "Romantic Pink Heart Palette",
       "main_color": "玫瑰粉",
       "palette": ["玫瑰粉", "蜜桃粉", "珠光白", "香槟金", "少量暖紫粉"],
-      "materials": ["高光糖果树脂", "柔亮珐琅", "半透明果冻晶体内芯", "香槟金细包边"],
+      "materials": ["高光软糖树脂", "柔亮珐琅", "半透明柔雾果冻内芯", "极薄香槟色柔雾饰边"],
       "match_terms": ["爱心", "heart", "💕", "💜", "甜美", "浪漫", "陪伴"],
       "avoid": ["廉价情人节贴纸", "粉色糊成一片", "低幼卡通"]
     },
@@ -77,7 +77,7 @@
       "name": "Tropical Wave Palette",
       "main_color": "海水蓝",
       "palette": ["海水蓝", "青绿色", "椰林绿", "日落橙", "珠光白"],
-      "materials": ["透明水晶树脂", "青绿果冻晶体", "珠光白包边", "日落橙珐琅"],
+      "materials": ["柔雾果冻树脂", "青绿软胶", "珠光白柔雾包边", "日落橙珐琅"],
       "match_terms": ["海", "wave", "island", "tropical", "普吉", "beach"],
       "avoid": ["旅游海报", "真实风景背景", "椰树贴纸堆叠"]
     },
@@ -85,8 +85,8 @@
       "id": "esports_red",
       "name": "Esports Red Silver Palette",
       "main_color": "警示红",
-      "palette": ["警示红", "银灰金属", "冷白", "电光红", "少量钛银"],
-      "materials": ["亮面红色珐琅", "银灰金属护边", "冷白晶体核心", "电光红局部发光"],
+      "palette": ["警示红", "低反射银灰", "冷白", "电光红", "少量冷银"],
+      "materials": ["哑光红色软搪胶", "低反射银灰软质护边", "冷白软发光核心", "电光红局部发光软胶"],
       "match_terms": ["电竞", "esports", "battle", "竞技", "fire", "score", "胜负"],
       "avoid": ["武器化", "战队海报", "过多界面文字"]
     }

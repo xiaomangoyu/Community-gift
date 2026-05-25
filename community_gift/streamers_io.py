@@ -14,9 +14,9 @@ Mapping (signals.md → HostInput):
 - ``tier``          → joined into ``notes`` as ``tier: <value>``
 - ``avatar.jpg``    → ``host_image``    (absolute path, only if file exists)
 
-Colors / vibe / personality are NOT in signals.md and are intentionally left
-empty in v1 — see chat history. Avatar still feeds the vision brief, but it is
-not sent to Seedream as an image reference by default.
+Direction fields such as palette / material / mood / form exploration are kept
+in ``HostInput.raw`` so downstream deterministic prompt code can use them
+without relying on free-form notes.
 """
 
 from __future__ import annotations
@@ -32,6 +32,18 @@ _HEADER_RE = re.compile(r"^#\s+(.+?)\s*$")
 _BULLET_FIELD_RE = re.compile(r"^-\s+\*\*([^*]+)\*\*:\s*(.+?)\s*$")
 _SYMBOL_RE = re.compile(r"^-\s+`([^`]+)`\s*(?:\(([^)]+)\))?\s*$")
 _PLAIN_BULLET_RE = re.compile(r"^-\s+`([^`]+)`\s*$")
+
+_DIRECTION_SECTIONS = {
+    "palette direction": "palette_direction",
+    "material direction": "material_direction",
+    "mood coverage": "mood_coverage",
+    "form exploration": "form_exploration",
+    "shape exploration": "form_exploration",
+    "配色方向": "palette_direction",
+    "材质方向": "material_direction",
+    "情绪覆盖": "mood_coverage",
+    "形态探索": "form_exploration",
+}
 
 
 def read_streamers(
@@ -98,6 +110,10 @@ def _parse_signals_md(path: Path) -> dict:
         "comm_symbols": [],
         "primary_signals": [],
         "missing_signals": [],
+        "palette_direction": [],
+        "material_direction": [],
+        "mood_coverage": [],
+        "form_exploration": [],
         "avatar_file": "",
         "stickers_file": "",
         "characterization": "",
@@ -139,10 +155,16 @@ def _parse_signals_md(path: Path) -> dict:
             continue
 
         if section in {"primary signals", "missing signals"}:
-            plain = _PLAIN_BULLET_RE.match(line)
-            if plain:
+            value = _bullet_text(line)
+            if value:
                 key = "primary_signals" if section == "primary signals" else "missing_signals"
-                record[key].append(plain.group(1).strip())
+                record[key].append(value)
+            continue
+
+        if section in _DIRECTION_SECTIONS:
+            value = _bullet_text(line)
+            if value:
+                record[_DIRECTION_SECTIONS[section]].append(value)
             continue
 
         if section == "characterization":
@@ -174,6 +196,19 @@ def _extract_backticked(text: str) -> str:
     return match.group(1).strip() if match else ""
 
 
+def _bullet_text(line: str) -> str:
+    """Return a bullet value, accepting both backticked tags and plain bullets."""
+
+    plain = _PLAIN_BULLET_RE.match(line)
+    if plain:
+        return plain.group(1).strip()
+    stripped = line.strip()
+    if not stripped.startswith("-"):
+        return ""
+    value = stripped.lstrip("-").strip()
+    return value.strip("` ")
+
+
 def _to_host_input(record: dict, row_id: int) -> HostInput:
     folder: Path = record["_folder"]
 
@@ -194,6 +229,10 @@ def _to_host_input(record: dict, row_id: int) -> HostInput:
         note_parts.append(f"fan_club: {record['fan_club']}")
     if record["primary_signals"]:
         note_parts.append("signals: " + ", ".join(record["primary_signals"]))
+    if record["material_direction"]:
+        note_parts.append("material_direction: " + ", ".join(record["material_direction"]))
+    if record["palette_direction"]:
+        note_parts.append("palette_direction: " + ", ".join(record["palette_direction"]))
     if record["stickers_file"]:
         note_parts.append(f"stickers_file: {record['stickers_file']}")
 
@@ -212,6 +251,10 @@ def _to_host_input(record: dict, row_id: int) -> HostInput:
             "comm_symbols": record["comm_symbols"],
             "primary_signals": record["primary_signals"],
             "missing_signals": record["missing_signals"],
+            "palette_direction": record["palette_direction"],
+            "material_direction": record["material_direction"],
+            "mood_coverage": record["mood_coverage"],
+            "form_exploration": record["form_exploration"],
             "avatar_file": record["avatar_file"],
             "stickers_file": record["stickers_file"],
             "characterization": record["characterization"],

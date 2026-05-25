@@ -235,6 +235,7 @@ def _extract_slots(host: HostInput, brief: HostBrief, intent: RetrievalIntent):
     color_fields = color_decision.fields
     shape_fields = shape_decision.fields
     reference_fields = reference_decision.fields
+    raw = host.raw if isinstance(host.raw, dict) else {}
 
     banned = _unique(list(color_fields.get("negative_add", [])))
     display_text, text_policy_reason = _select_display_text(host, brief)
@@ -274,11 +275,20 @@ def _extract_slots(host: HostInput, brief: HostBrief, intent: RetrievalIntent):
         "palette_name": color_fields["palette_name"],
         "intent_anchor_terms": intent_anchor_terms,
         "intent_avoid_text_scripts": list(intent.avoid_text_scripts),
+        "design_directives": {
+            "palette_direction": list(raw.get("palette_direction") or []),
+            "material_direction": list(raw.get("material_direction") or []),
+            "mood_coverage": list(raw.get("mood_coverage") or []),
+            "form_exploration": list(raw.get("form_exploration") or []),
+            "primary_signals": list(raw.get("primary_signals") or []),
+            "characterization": raw.get("characterization", ""),
+        },
         "banned": banned,
         "discarded": _discarded(brief.symbols_raw, [primary_symbol, secondary_symbol]),
     }
     if brief.vision is not None:
         _apply_vision_overrides(slots, brief.vision)
+    slots["materials"] = _finalize_material_terms(slots)
     _enforce_display_text_policy(slots, host, brief)
     return slots, color_decision, shape_decision, reference_decision
 
@@ -503,7 +513,7 @@ def _build_prompt(slots: dict) -> str:
 
 整体配色采用{colors}（主色锚点为{slots['color_anchor']}，来自{slots['palette_name']}）。背景保持纯黑棚拍质感；如果主题需要深色，用烟灰、枪灰、珠光灰或深色透明树脂表达，让产品边缘和材质层次仍然清楚。
 
-材质以{materials}为主，整体强调圆润实体厚度、材质对比、精致倒角、收藏级产品质感。亮面硬质饰件只作为薄边、微小徽章或少量连接点出现；皮革、织物或护具感元素转译为连续哑光包覆、浅压纹和干净表面。打光以{lighting_phrase}为主，重点表现真实厚度、清晰倒角、柔和受控高光。
+材质组合采用{materials}。大面积灯头外壳和握柄必须由软触感材质主导，强调可触摸的柔软表面、圆钝厚度、低反射质感和干净的收藏玩具完成度。透明、玻璃、晶体或金属元素只作为文字核心、小徽章、极薄连接边或少量发光节点出现，不主导灯头和握柄外壳；皮革、织物或护具感元素转译为连续哑光包覆、浅压纹和干净表面。打光以{lighting_phrase}为主，重点表现真实厚度、柔和圆角、受控高光和表面触感。
 
 主题为{slots['primary_symbol']}的解构设计：{slots['symbol_translation']}{secondary_clause}。{fusion_clause}所有外扩装饰、包边、护片或框架都与灯头主体一体成型，中央核心保持完整饱满，不做空心镂空，也不做贴纸式平面图案。
 
@@ -554,6 +564,9 @@ def _build_negative_prompt(slots: dict) -> str:
         "mirror-like reflections",
         "cheap glossy plastic",
         "heavy chrome metal",
+        "large metal body",
+        "large glass body",
+        "hard crystal shell",
     ]
     avoid_scripts = set(slots.get("intent_avoid_text_scripts") or [])
     if not avoid_scripts:
@@ -727,6 +740,223 @@ def _reserve_quotes_for_display_text(text: str, display_text: str) -> str:
     return text
 
 
+_HARD_MATERIAL_TRIGGERS = (
+    "玻璃",
+    "水晶",
+    "晶体",
+    "金属",
+    "铝",
+    "铬",
+    "黄铜",
+    "钛",
+    "钢",
+    "镜面",
+    "硬树脂",
+)
+_HARD_ACCENT_QUALIFIERS = (
+    "小面积",
+    "少量",
+    "局部",
+    "极薄",
+    "微型",
+    "小型",
+    "点缀",
+    "饰边",
+    "包边",
+    "核心",
+    "连接点",
+)
+_SOFT_MATERIAL_CUES = (
+    "软",
+    "硅胶",
+    "搪胶",
+    "植绒",
+    "毛绒",
+    "短绒",
+    "丝绒",
+    "绒感",
+    "布",
+    "织",
+    "泡棉",
+    "棉",
+    "毛毡",
+    "橡胶",
+    "珐琅",
+    "果冻",
+    "陶",
+    "木",
+    "低反射",
+    "哑光",
+    "柔雾",
+)
+
+
+def _finalize_material_terms(slots: dict) -> list[str]:
+    """Make the final prompt material mix soft-led and visually varied.
+
+    Vision can legitimately notice glass/metal/crystal, but those words become
+    too dominant when they enter the final prompt as the main material. This
+    final deterministic pass keeps hard materials only as small accents.
+    """
+
+    preferred = _preferred_soft_materials(_material_context_text(slots))
+    source = _soften_material_terms(list(slots.get("materials") or []))
+    out: list[str] = []
+
+    for material in source:
+        text = _demote_hard_material(material)
+        if text:
+            out.append(text)
+
+    body_soft_count = sum(1 for material in out if _is_body_soft_material(material))
+    if not out or _is_dominant_hard_material(out[0]) or not _is_body_soft_material(out[0]):
+        out.insert(0, preferred[0])
+        body_soft_count += 1
+    if body_soft_count < 2 and len(preferred) > 1:
+        out.insert(1, preferred[1])
+
+    # Keep the material line focused: two soft/tactile leads plus at most two
+    # accents read better than a long ingredient list.
+    return _unique(out)[:4]
+
+
+def _material_context_text(slots: dict) -> str:
+    directives = slots.get("design_directives") or {}
+    parts: list[str] = [
+        slots.get("primary_symbol", ""),
+        slots.get("secondary_symbol", ""),
+        slots.get("theme_title", ""),
+        slots.get("mood", ""),
+        slots.get("silhouette_language", ""),
+        " ".join(slots.get("intent_anchor_terms") or []),
+    ]
+    for key in (
+        "material_direction",
+        "mood_coverage",
+        "form_exploration",
+        "primary_signals",
+    ):
+        parts.extend(str(item) for item in directives.get(key) or [])
+    parts.append(str(directives.get("characterization") or ""))
+    return " ".join(part for part in parts if part).lower()
+
+
+def _preferred_soft_materials(context: str) -> list[str]:
+    pairs = [
+        (
+            (
+                "毛绒",
+                "plush",
+                "pet",
+                "cat",
+                "rabbit",
+                "bunny",
+                "elephant",
+                "alpaca",
+                "penguin",
+                "duck",
+                "bird",
+                "eagle",
+                "frog",
+                "animal",
+                "宠物",
+                "动物",
+                "兔",
+                "猫",
+                "大象",
+                "羊驼",
+                "企鹅",
+                "小鸭",
+                "鸟",
+                "鹰",
+                "青蛙",
+            ),
+            ["短绒植绒", "亲肤硅胶"],
+        ),
+        (
+            (
+                "food",
+                "fruit",
+                "dessert",
+                "potato",
+                "melon",
+                "lychee",
+                "churro",
+                "gummy",
+                "candy",
+                "甜",
+                "水果",
+                "食物",
+                "糖",
+                "软糖",
+                "土豆",
+                "蜜瓜",
+                "荔枝",
+                "吉拿",
+                "甜点",
+            ),
+            ["雾面软搪胶", "柔软果冻树脂"],
+        ),
+        (
+            ("sport", "basketball", "tennis", "bowling", "ball", "运动", "球"),
+            ["哑光软胶", "短绒植绒"],
+        ),
+        (
+            ("ghost", "sticker", "cloud", "soft", "healing", "cute", "治愈", "软萌", "贴纸", "幽灵", "云"),
+            ["丝绒触感涂层", "亲肤硅胶"],
+        ),
+        (
+            ("hat", "cap", "fabric", "textile", "帽", "布", "织物"),
+            ["短绒布艺包覆", "柔雾珐琅"],
+        ),
+        (
+            ("crown", "badge", "perfume", "globe", "police", "皇冠", "徽章", "香水"),
+            ["珠光软搪胶", "柔雾珐琅"],
+        ),
+        (
+            ("dark", "gothic", "black", "night", "夜", "黑", "暗"),
+            ["哑光软搪胶", "丝绒触感涂层"],
+        ),
+    ]
+    for triggers, materials in pairs:
+        if any(trigger in context for trigger in triggers):
+            return materials
+    return ["哑光软搪胶", "柔雾珐琅"]
+
+
+def _demote_hard_material(material: str) -> str:
+    text = str(material or "").strip()
+    if not text:
+        return ""
+    if not _is_dominant_hard_material(text):
+        return text
+    if any(token in text for token in ("黄铜", "金", "古铜")):
+        return "极薄哑光古金饰边"
+    if any(token in text for token in ("银", "铝", "铬", "钛", "钢", "金属")):
+        return "极薄低反射银灰饰边"
+    if any(token in text for token in ("玻璃", "水晶", "晶体")):
+        return "小面积柔光透明树脂点缀"
+    return "小面积低反射硬质点缀"
+
+
+def _is_dominant_hard_material(material: str) -> bool:
+    text = str(material or "")
+    if not any(trigger in text for trigger in _HARD_MATERIAL_TRIGGERS):
+        return False
+    return not any(qualifier in text for qualifier in _HARD_ACCENT_QUALIFIERS)
+
+
+def _has_soft_material_cue(material: str) -> bool:
+    return any(cue in str(material or "") for cue in _SOFT_MATERIAL_CUES)
+
+
+def _is_body_soft_material(material: str) -> bool:
+    text = str(material or "")
+    return _has_soft_material_cue(text) and not any(
+        qualifier in text for qualifier in _HARD_ACCENT_QUALIFIERS
+    )
+
+
 def _soften_anchor_terms(terms: list[str]) -> list[str]:
     """Remove anchor hints that tend to overproduce armor/stitch/chrome detail."""
 
@@ -755,10 +985,29 @@ def _soften_material_terms(materials: list[str]) -> list[str]:
     """Keep material intent, but reduce AI-ish chrome/stitch/armor triggers."""
 
     replacements = {
+        "吹制气泡玻璃": "小面积柔光透明树脂点缀",
+        "磨砂玻璃": "小面积柔雾透明树脂点缀",
+        "切面水晶": "小面积柔光透明树脂点缀",
+        "透明水晶": "小面积柔光透明树脂点缀",
+        "发光晶体核心": "小范围软发光核心",
+        "冷白晶体核心": "小范围冷白软发光核心",
+        "冷白晶体内芯": "小范围冷白软发光核心",
+        "半透明晶体内芯": "小范围半透明软发光核心",
+        "半透明果冻晶体内芯": "半透明柔雾果冻内芯",
+        "半透明果冻晶体": "半透明柔雾果冻树脂",
+        "透明晶体": "小面积柔光透明树脂点缀",
         "镜面铬金属": "低反射深灰硬漆",
         "拉丝铝金属": "低反射阳极氧化漆面",
+        "阳极氧化黑铝": "低反射深灰软质饰边",
+        "阳极氧化枪灰": "低反射枪灰软质饰边",
+        "镜面银色细包边": "极薄低反射银灰饰边",
+        "银灰金属护边": "低反射银灰软质护边",
+        "金属皇冠细包边": "极薄低反射金色软质包边",
+        "金属包边": "极薄低反射饰边",
         "拉丝古金属": "哑光古金薄饰边",
         "做旧黄铜": "哑光古铜薄饰边",
+        "香槟金属包边": "极薄香槟色柔雾饰边",
+        "香槟金细包边": "极薄香槟色柔雾饰边",
         "缝纫皮革": "哑光软皮包覆",
         "细腻缝纫皮革": "哑光软皮包覆",
         "雾面缝纫皮革": "雾面软皮包覆",
@@ -779,12 +1028,26 @@ def _soften_handle_phrase(text: str) -> str:
     """Tone down stitch/metal/strap language from vision-derived handle copy."""
 
     replacements = {
+        "吹制气泡玻璃": "柔光透明软树脂",
+        "磨砂玻璃": "柔雾透明软树脂",
+        "玻璃窗": "透明软树脂小窗",
+        "玻璃腰身": "透明软树脂腰身",
+        "透明晶体": "透明软树脂",
+        "冷白晶体": "冷白软发光",
+        "阳极氧化黑铝": "低反射深灰软胶",
+        "阳极氧化枪灰": "低反射枪灰软胶",
+        "镜面铬金属": "低反射深灰硬漆",
+        "镜面金属饰边": "低反射薄饰边",
+        "金属尾盖": "低反射圆润尾盖",
+        "金属边": "低反射薄边",
+        "金属曲面": "低反射哑光曲面",
+        "黄铜装饰边": "哑光古金薄饰边",
+        "黄铜包芯握柄": "哑光软胶包覆握柄",
         "缝纫皮革": "哑光软皮",
         "缝线皮革": "哑光软皮",
         "细缝线": "细浅压纹",
         "缝线": "浅压纹",
         "车缝": "浅压纹",
-        "镜面金属饰边": "低反射薄饰边",
         "金属折片纹带": "浅浮雕折片纹带",
         "金属护片": "低反射小护片",
         "银色护片": "低反射银灰小护片",
