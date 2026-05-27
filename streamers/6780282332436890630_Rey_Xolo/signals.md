@@ -11,7 +11,7 @@
 - `🪞` (comm)
 - `👻` (comm)
 
-## Primary signals
+## Evidence signals
 - `named_fan_club_with_logo_stickers`
 - `community_name_distinct_from_host`
 - `recurring_mascot_or_pet`
@@ -21,15 +21,11 @@
 - `repeated_phrase_with_visual_treatment`
 - `logo_style_community_stickers`
 
-## Missing signals
+## Missing evidence
 - (none recorded)
 
 ## Characterization
 Rey Xolo is a high-energy streamer from Monterrey, Mexico, whose content is split between intense TikTok battles and playing the mobile shooter game Free Fire. His streams are characterized by a competitive and humorous vibe, filled with informal Mexican Spanish and slang. His visual setup is distinct, featuring a gaming chair, prominent blue and pink neon lighting, and he often wears baseball caps. Recurring elements that define his persona include a prop crown (reflecting his name "Rey," meaning King), and a Tigres UANL soccer jersey, which showcases his regional pride.
-
-## 500-coin object recommendation
-- **object**: `light_stick`
-- **reason**: light_stick fits the creator's high-energy battle content and royal 'Rey' (King) theme, and strongly benefits from the multiple excellent visual hero options like the crown and Xolo dog mascot.
 
 ## Media
 - avatar: `avatar.jpg` (token `KD1Pb928DoJihvxY4THl2BlLgUo`)

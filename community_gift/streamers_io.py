@@ -10,7 +10,7 @@ Mapping (signals.md → HostInput):
 - ``anchor_id``     → ``anchor_id``
 - ``fan_club``      → ``community_name``
 - Top symbols       → ``symbols``       (comm first, host second, original order)
-- Primary signals   → joined into ``notes`` as ``signals: a, b, c``
+- Evidence signals  → joined into ``notes`` as ``signals: a, b, c``
 - ``tier``          → joined into ``notes`` as ``tier: <value>``
 - ``avatar.jpg``    → ``host_image``    (absolute path, only if file exists)
 
@@ -32,6 +32,7 @@ _HEADER_RE = re.compile(r"^#\s+(.+?)\s*$")
 _BULLET_FIELD_RE = re.compile(r"^-\s+\*\*([^*]+)\*\*:\s*(.+?)\s*$")
 _SYMBOL_RE = re.compile(r"^-\s+`([^`]+)`\s*(?:\(([^)]+)\))?\s*$")
 _PLAIN_BULLET_RE = re.compile(r"^-\s+`([^`]+)`\s*$")
+_SECTION_HEADING_RE = re.compile(r"^#{2,4}\s+(.+?)\s*$")
 
 _DIRECTION_SECTIONS = {
     "palette direction": "palette_direction",
@@ -43,6 +44,26 @@ _DIRECTION_SECTIONS = {
     "材质方向": "material_direction",
     "情绪覆盖": "mood_coverage",
     "形态探索": "form_exploration",
+}
+_SECTION_ALIASES = {
+    "top symbol": "top symbols",
+    "top symbols": "top symbols",
+    "primary signal": "evidence signals",
+    "primary signals": "evidence signals",
+    "evidence signal": "evidence signals",
+    "evidence signals": "evidence signals",
+    "signal evidence": "evidence signals",
+    "missing signal": "missing evidence",
+    "missing signals": "missing evidence",
+    "missing evidence": "missing evidence",
+    "missing evidences": "missing evidence",
+    "characterization": "characterization",
+    "media": "media",
+    "palette directions": "palette direction",
+    "material directions": "material direction",
+    "mood coverages": "mood coverage",
+    "form explorations": "form exploration",
+    "shape explorations": "shape exploration",
 }
 
 
@@ -108,6 +129,10 @@ def _parse_signals_md(path: Path) -> dict:
         "fan_club": "",
         "host_symbols": [],
         "comm_symbols": [],
+        "evidence_signals": [],
+        "missing_evidence": [],
+        # Backward-compatible aliases. Downstream code should prefer
+        # evidence_signals / missing_evidence.
         "primary_signals": [],
         "missing_signals": [],
         "palette_direction": [],
@@ -129,8 +154,9 @@ def _parse_signals_md(path: Path) -> dict:
                 record["host_name"] = header.group(1).strip()
                 continue
 
-        if line.startswith("## "):
-            section = line[3:].strip().lower()
+        section_heading = _SECTION_HEADING_RE.match(line)
+        if section_heading:
+            section = _normalize_section_name(section_heading.group(1))
             continue
 
         bullet_field = _BULLET_FIELD_RE.match(line)
@@ -154,11 +180,15 @@ def _parse_signals_md(path: Path) -> dict:
                     record["host_symbols"].append(symbol)
             continue
 
-        if section in {"primary signals", "missing signals"}:
+        if section in {"evidence signals", "missing evidence"}:
             value = _bullet_text(line)
             if value:
-                key = "primary_signals" if section == "primary signals" else "missing_signals"
-                record[key].append(value)
+                if section == "evidence signals":
+                    record["evidence_signals"].append(value)
+                    record["primary_signals"].append(value)
+                else:
+                    record["missing_evidence"].append(value)
+                    record["missing_signals"].append(value)
             continue
 
         if section in _DIRECTION_SECTIONS:
@@ -196,6 +226,14 @@ def _extract_backticked(text: str) -> str:
     return match.group(1).strip() if match else ""
 
 
+def _normalize_section_name(value: str) -> str:
+    text = str(value or "").strip().lower()
+    text = re.sub(r"[：:]+$", "", text)
+    text = text.replace("_", " ").replace("-", " ")
+    text = re.sub(r"\s+", " ", text).strip()
+    return _SECTION_ALIASES.get(text, text)
+
+
 def _bullet_text(line: str) -> str:
     """Return a bullet value, accepting both backticked tags and plain bullets."""
 
@@ -227,8 +265,10 @@ def _to_host_input(record: dict, row_id: int) -> HostInput:
         note_parts.append(f"tier: {record['tier']}")
     if record["fan_club"]:
         note_parts.append(f"fan_club: {record['fan_club']}")
-    if record["primary_signals"]:
-        note_parts.append("signals: " + ", ".join(record["primary_signals"]))
+    evidence_signals = record.get("evidence_signals") or record.get("primary_signals") or []
+    missing_evidence = record.get("missing_evidence") or record.get("missing_signals") or []
+    if evidence_signals:
+        note_parts.append("signals: " + ", ".join(evidence_signals))
     if record["material_direction"]:
         note_parts.append("material_direction: " + ", ".join(record["material_direction"]))
     if record["palette_direction"]:
@@ -249,8 +289,10 @@ def _to_host_input(record: dict, row_id: int) -> HostInput:
             "fan_club": record["fan_club"],
             "host_symbols": record["host_symbols"],
             "comm_symbols": record["comm_symbols"],
-            "primary_signals": record["primary_signals"],
-            "missing_signals": record["missing_signals"],
+            "evidence_signals": evidence_signals,
+            "missing_evidence": missing_evidence,
+            "primary_signals": evidence_signals,
+            "missing_signals": missing_evidence,
             "palette_direction": record["palette_direction"],
             "material_direction": record["material_direction"],
             "mood_coverage": record["mood_coverage"],

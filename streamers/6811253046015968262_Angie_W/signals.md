@@ -10,7 +10,7 @@
 - `Angie` (host)
 - `crash out` (comm)
 
-## Primary signals
+## Evidence signals
 - `named_fan_club_with_logo_stickers`
 - `recurring_object_or_prop`
 - `community_name_distinct_from_host`
@@ -19,15 +19,11 @@
 - `recognizable_color_system`
 - `logo_style_community_stickers`
 
-## Missing signals
+## Missing evidence
 - (none recorded)
 
 ## Characterization
 Angie W. hosts a commentary-style livestream, often from a room or RV distinguished by dark interiors and a blue 'starry night' projector effect. Her content focuses on analyzing online drama and legal disputes, where she reads documents and provides in-depth commentary. The vibe is analytical and serious, akin to a true-crime or gossip channel, fostering a highly engaged community that participates in the discussion. While focused and investigative, Angie's personality is also passionate and conversational, especially when interacting with her audience.
-
-## 500-coin object recommendation
-- **object**: `light_stick`
-- **reason**: light_stick fits the 'gang' rally energy and best leverages the extremely strong visual_hero slot with a unique, sculptable object.
 
 ## Media
 - avatar: `avatar.jpg` (token `VOfIbxPnaoKoOcx7RUQlZlCIgMh`)

@@ -92,8 +92,9 @@ def build_template_first_design(
             "Host data is a delta, not the prompt skeleton.",
             "Only the primary symbol may shape the lamp-head silhouette.",
             "Supporting data may become small rim detail, material cue, or color accent.",
+            _style_control_summary(slots.get("style_controls") or {}),
         ],
-        complexity_level="low",
+        complexity_level=_style_complexity_level(slots.get("style_controls") or {}),
         effect_type="lightstick",
     )
     prompt_plan = PromptPlan(
@@ -158,11 +159,12 @@ def build_template_first_design(
             "one streamer element must appear on the lightstick body",
             "one streamer color group must appear on the lightstick body",
             "ignore extra host details after these anchors are satisfied",
+            _style_control_summary(slots.get("style_controls") or {}),
         ],
         negative_constraints=slots["banned"],
         seedance_prompt=prompt,
         seedance_negative_prompt=negative_prompt,
-        reference_pairs=_assemble_reference_pairs(host, reference_decision),
+        reference_pairs=_assemble_reference_pairs(host, reference_decision, slots),
         routing_trace={
             "color": {
                 "matched_rule_id": color_decision.matched_rule_id,
@@ -179,6 +181,7 @@ def build_template_first_design(
                 "fields": reference_decision.fields,
                 "trace": reference_decision.trace_dict(),
             },
+            "style_controls": slots.get("style_controls") or {},
         },
     )
     return design, brief
@@ -204,7 +207,11 @@ def _include_host_avatar_reference() -> bool:
     }
 
 
-def _assemble_reference_pairs(host: HostInput, reference_decision) -> list[tuple[str, str]]:
+def _assemble_reference_pairs(
+    host: HostInput,
+    reference_decision,
+    slots: dict | None = None,
+) -> list[tuple[str, str]]:
     """Avatar first (when present), then lightstick references from the router."""
 
     pairs: list[tuple[str, str]] = []
@@ -218,8 +225,55 @@ def _assemble_reference_pairs(host: HostInput, reference_decision) -> list[tuple
     for pick in reference_decision.fields.get("picks", []) or []:
         image_path = pick.get("image_path")
         if image_path:
-            pairs.append((image_path, pick.get("role_description", "")))
+            role = pick.get("role_description", "")
+            if slots and slots.get("avoid_mirror_finish") and _is_hard_reflective_reference_role(role):
+                continue
+            pairs.append((image_path, _soften_reference_role(role)))
     return pairs
+
+
+def _is_hard_reflective_reference_role(role: str) -> bool:
+    text = str(role or "").lower()
+    return any(
+        token in text
+        for token in (
+            "glossy",
+            "crystal",
+            "chrome",
+            "metal",
+            "mirror",
+            "glass",
+            "polished",
+            "strong glow",
+        )
+    )
+
+
+def _soften_reference_role(role: str) -> str:
+    text = str(role or "").strip()
+    if not text:
+        return ""
+    softened = text
+    replacements = {
+        "glossy": "satin",
+        "polished": "smooth satin",
+        "crystal": "soft luminous",
+        "chrome": "low-reflection trim",
+        "metal": "low-reflection trim",
+        "mirror": "matte",
+        "strong purple glow": "controlled purple glow",
+        "strong glow": "controlled glow",
+    }
+    for src, dst in replacements.items():
+        softened = re.sub(src, dst, softened, flags=re.IGNORECASE)
+    if softened != text:
+        return (
+            softened
+            + " Use this reference only for full-product orientation, proportion, and readable central text placement; "
+            "adapt the generated product with soft-touch matte/satin surfaces, broad gentle highlights, "
+            "and low-reflection material handling."
+        )
+    return softened
 
 
 def _extract_slots(host: HostInput, brief: HostBrief, intent: RetrievalIntent):
@@ -249,6 +303,11 @@ def _extract_slots(host: HostInput, brief: HostBrief, intent: RetrievalIntent):
     # CSV columns — they're noisy in a prompt anchor line. Keep only
     # short single-word tags (the inferred English ones from manifests).
     intent_anchor_terms = [t for t in intent_anchor_terms if len(t) <= 20 and " " not in t]
+    style_controls = (
+        intent.style_controls.model_dump()
+        if getattr(intent, "style_controls", None) is not None
+        else brief.style_controls.model_dump()
+    )
 
     slots = {
         "display_text": display_text,
@@ -275,12 +334,14 @@ def _extract_slots(host: HostInput, brief: HostBrief, intent: RetrievalIntent):
         "palette_name": color_fields["palette_name"],
         "intent_anchor_terms": intent_anchor_terms,
         "intent_avoid_text_scripts": list(intent.avoid_text_scripts),
+        "style_controls": style_controls,
         "design_directives": {
             "palette_direction": list(raw.get("palette_direction") or []),
             "material_direction": list(raw.get("material_direction") or []),
             "mood_coverage": list(raw.get("mood_coverage") or []),
             "form_exploration": list(raw.get("form_exploration") or []),
-            "primary_signals": list(raw.get("primary_signals") or []),
+            "evidence_signals": list(raw.get("evidence_signals") or raw.get("primary_signals") or []),
+            "primary_signals": list(raw.get("evidence_signals") or raw.get("primary_signals") or []),
             "characterization": raw.get("characterization", ""),
         },
         "banned": banned,
@@ -288,6 +349,7 @@ def _extract_slots(host: HostInput, brief: HostBrief, intent: RetrievalIntent):
     }
     if brief.vision is not None:
         _apply_vision_overrides(slots, brief.vision)
+    _soften_reflective_slots(slots)
     slots["materials"] = _finalize_material_terms(slots)
     _enforce_display_text_policy(slots, host, brief)
     return slots, color_decision, shape_decision, reference_decision
@@ -482,8 +544,13 @@ def _build_prompt(slots: dict) -> str:
     """
 
     colors = "、".join(slots["colors"])
-    materials = "、".join(_soften_material_terms(slots["materials"]))
+    materials = "、".join(slots["materials"])
     lighting_phrase = "柔和棚拍主光、克制边缘描光、低反射材质对比、中央文字小范围内发光"
+    reflective_clause = (
+        "深色冷调主题也使用雾灰软胶厚框、柔雾珐琅名牌、烟灰软胶和宽柔高光，整体保持吸光、低亮、低反射。"
+        if slots.get("avoid_mirror_finish")
+        else ""
+    )
     fusion_note = slots.get("fusion_note") or ""
     fusion_clause = f"{fusion_note}。" if fusion_note else ""
     secondary_clause = (
@@ -506,14 +573,16 @@ def _build_prompt(slots: dict) -> str:
         else f"底部装饰为{bottom_node}，与手柄整体协调。"
     )
     script_guidance = _text_script_guidance(slots["display_text"])
+    style_control_clause = _style_control_prompt_clause(slots.get("style_controls") or {})
 
     prompt = f"""黑色背景，1:1 正方形画面，固定 45 度朝右产品视角，完整展示整支打call棒，从灯头、连接处、握柄到底部节点全部清晰可见，主体居中，高精度3D收藏级应援棒。灯头是视觉重心，握柄短而完整，整体是一体连续的圆润产品造型。顶部为{lamp_head_silhouette}，中央为完整饱满的实体核心，中间嵌入发光文字「{slots['display_text']}」。
 
 整体风格围绕{slots['primary_symbol']}主题延展，设定为{slots['theme_title']}，整体气质偏{slots['mood']}。
+{style_control_clause}
 
 整体配色采用{colors}（主色锚点为{slots['color_anchor']}，来自{slots['palette_name']}）。背景保持纯黑棚拍质感；如果主题需要深色，用烟灰、枪灰、珠光灰或深色透明树脂表达，让产品边缘和材质层次仍然清楚。
 
-材质组合采用{materials}。大面积灯头外壳和握柄必须由软触感材质主导，强调可触摸的柔软表面、圆钝厚度、低反射质感和干净的收藏玩具完成度。透明、玻璃、晶体或金属元素只作为文字核心、小徽章、极薄连接边或少量发光节点出现，不主导灯头和握柄外壳；皮革、织物或护具感元素转译为连续哑光包覆、浅压纹和干净表面。打光以{lighting_phrase}为主，重点表现真实厚度、柔和圆角、受控高光和表面触感。
+材质组合采用{materials}。大面积灯头外壳和握柄必须由软触感材质主导，强调可触摸的柔软表面、圆钝厚度、低反射质感和干净的收藏玩具完成度。硬质反光元素只作为文字核心、小徽章、极薄连接边或少量发光节点出现，不主导灯头和握柄外壳；皮革、织物或护具感元素转译为连续哑光包覆、浅压纹和干净表面。{reflective_clause}打光以{lighting_phrase}为主，重点表现真实厚度、柔和圆角、受控高光和表面触感。
 
 主题为{slots['primary_symbol']}的解构设计：{slots['symbol_translation']}{secondary_clause}。{fusion_clause}所有外扩装饰、包边、护片或框架都与灯头主体一体成型，中央核心保持完整饱满，不做空心镂空，也不做贴纸式平面图案。
 
@@ -527,6 +596,71 @@ def _build_prompt(slots: dict) -> str:
 
 整体强调：收藏级实体产品渲染、强3D体积感、真实材质厚度、克制明暗层次、文字与中央核心局部发光、整支棒体不做全局霓虹泛光、干净棚拍产品感。整支打call棒完整入画，灯头、连接件、完整手柄和底部节点都清晰可见，产品像悬浮在纯黑摄影棚中。"""
     return _polish_prompt_text(_reserve_quotes_for_display_text(prompt, slots["display_text"]))
+
+
+def _style_control_prompt_clause(style_controls: dict) -> str:
+    """Translate numeric style controls into bounded visual direction."""
+
+    if not style_controls:
+        return ""
+    wildness = _safe_int(style_controls.get("wildness_score"), 0)
+    creativity = _safe_int(
+        style_controls.get("effective_creativity", style_controls.get("creativity_score")),
+        0,
+    )
+    parts: list[str] = []
+    if creativity >= 3:
+        parts.append(
+            "创意强度为高：允许大胆异形灯头轮廓、更明确的主题包裹结构和不对称护片，但所有结构必须圆钝、一体成型、软材质主导。"
+        )
+    elif creativity >= 2:
+        parts.append(
+            "创意强度为中高：允许明显的非圆主题轮廓、包裹式护片、浅浮雕和主题压纹，仍保持完整可握的商品比例。"
+        )
+    elif creativity >= 1:
+        parts.append(
+            "创意强度为轻度：在默认圆润轮廓上加入少量主题外形差异和浮雕细节，不改变打call棒的清晰产品结构。"
+        )
+
+    if wildness >= 2:
+        parts.append(
+            "野性/守护信号转译为圆钝羽翼弧片、徽章护盾、爪痕浅压纹或上扬软胶护片；不要做尖锐武器、硬甲、真实动物头或机甲碎片。"
+        )
+    elif wildness == 1:
+        parts.append(
+            "轻微野性信号只作为边缘弧片、徽章轮廓或浅压纹出现，避免过度攻击性。"
+        )
+    return "\n".join(parts)
+
+
+def _style_complexity_level(style_controls: dict) -> str:
+    creativity = _safe_int(
+        style_controls.get("effective_creativity", style_controls.get("creativity_score")),
+        0,
+    )
+    if creativity >= 3:
+        return "high"
+    if creativity >= 2:
+        return "medium"
+    return "low"
+
+
+def _style_control_summary(style_controls: dict) -> str:
+    if not style_controls:
+        return "style controls: wildness=0, creativity=0"
+    wildness = _safe_int(style_controls.get("wildness_score"), 0)
+    creativity = _safe_int(
+        style_controls.get("effective_creativity", style_controls.get("creativity_score")),
+        0,
+    )
+    return f"style controls: wildness={wildness}, creativity={creativity}"
+
+
+def _safe_int(value, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def _build_negative_prompt(slots: dict) -> str:
@@ -562,6 +696,21 @@ def _build_negative_prompt(slots: dict) -> str:
         "overexposed",
         "excessive bloom",
         "mirror-like reflections",
+        "mirror surface",
+        "black mirror finish",
+        "piano black gloss",
+        "glossy black shell",
+        "reflective black body",
+        "hard specular streaks",
+        "strong white reflection stripes",
+        "chrome rim glow",
+        "camera lens",
+        "glossy lens",
+        "lens reflection",
+        "metal bezel",
+        "silver metal ring",
+        "mechanical ring",
+        "tech gadget",
         "cheap glossy plastic",
         "heavy chrome metal",
         "large metal body",
@@ -751,6 +900,8 @@ _HARD_MATERIAL_TRIGGERS = (
     "钛",
     "钢",
     "镜面",
+    "阳极氧化",
+    "硬漆",
     "硬树脂",
 )
 _HARD_ACCENT_QUALIFIERS = (
@@ -785,10 +936,127 @@ _SOFT_MATERIAL_CUES = (
     "果冻",
     "陶",
     "木",
-    "低反射",
     "哑光",
     "柔雾",
 )
+_REFLECTIVE_GLOSS_TRIGGERS = (
+    "镜面",
+    "镜像",
+    "镜框",
+    "镜芯",
+    "镜子",
+    "曜石黑",
+    "墨黑",
+    "冷黑",
+    "亮黑",
+    "漆黑",
+    "mirror",
+    "chrome",
+    "glossy black",
+    "black_silver",
+    "mirror_noir",
+)
+_REFLECTIVE_SLOT_KEYS = (
+    "primary_symbol",
+    "secondary_symbol",
+    "theme_title",
+    "mood",
+    "symbol_translation",
+    "supporting_translation",
+    "text_style",
+    "bottom_node",
+    "silhouette_language",
+    "fusion_note",
+    "lamp_head_silhouette",
+    "handle_phrase",
+    "element_anchor",
+    "palette_name",
+)
+_REFLECTIVE_TEXT_REPLACEMENTS = {
+    "黑银镜像": "烟灰雾灰",
+    "黑银冷调": "烟灰雾灰冷调",
+    "黑白冷调": "烟灰冷调",
+    "黑银": "烟灰雾灰",
+    "内凹镜面": "柔雾珐琅内芯",
+    "内凹镜芯": "柔雾珐琅内芯",
+    "真实镜面": "柔雾珐琅内芯",
+    "镜面反射": "柔雾低亮层次",
+    "镜面": "柔雾珐琅内芯",
+    "镜像": "雾银",
+    "镜心": "柔雾中心",
+    "镜芯": "柔雾内芯",
+    "竖椭镜框": "竖椭雾灰软胶厚框",
+    "椭圆镜框": "椭圆雾灰软胶厚框",
+    "镜框": "雾灰软胶厚框",
+    "镜子相关": "椭圆软胶徽章相关",
+    "镜子": "椭圆雾灰软徽章",
+    "晶体镶嵌": "软发光嵌件",
+    "一圈极薄银白饰边": "一圈冷灰软胶薄边",
+    "极薄银白饰边": "冷灰软胶薄边",
+    "银白饰边": "冷灰软胶薄边",
+    "雾银": "雾灰",
+    "银白": "冷白灰",
+    "银灰": "冷灰",
+    "断口圆环": "断口软胶弧片",
+    "薄圈护沿": "浅浮雕弧片",
+    "断环": "断口软胶弧片",
+    "圆环": "软胶弧片",
+    "饰边": "软胶薄边",
+    "切面": "圆角",
+    "曜石黑": "烟灰黑",
+    "墨黑": "烟灰黑",
+    "冷黑": "冷灰",
+    "亮黑": "炭灰",
+    "漆黑": "石墨灰",
+    "纯黑": "烟灰",
+    "mirror noir": "soft matte noir",
+    "mirror": "matte oval badge",
+    "chrome": "low-reflection trim",
+    "glossy black": "matte graphite",
+    "glossy": "soft satin",
+}
+
+
+def _soften_reflective_slots(slots: dict) -> None:
+    """Turn mirror/noir cues into matte badge language before prompt assembly."""
+
+    if not _has_reflective_gloss_context(slots):
+        slots["avoid_mirror_finish"] = False
+        return
+
+    slots["avoid_mirror_finish"] = True
+    for key in _REFLECTIVE_SLOT_KEYS:
+        value = slots.get(key)
+        if isinstance(value, str):
+            slots[key] = _soften_reflective_text(value)
+    slots["colors"] = _unique(
+        [_soften_reflective_text(str(color)) for color in slots.get("colors") or []]
+    )
+    if slots.get("color_anchor"):
+        slots["color_anchor"] = _soften_reflective_text(str(slots["color_anchor"]))
+    if not slots.get("colors"):
+        slots["colors"] = ["烟灰黑", "雾银灰", "冷白", "石墨灰"]
+    if slots["colors"] and any(token in slots["colors"][0] for token in ("黑", "black")):
+        slots["colors"][0] = _soften_reflective_text(slots["colors"][0])
+
+
+def _has_reflective_gloss_context(slots: dict) -> bool:
+    parts: list[str] = []
+    for key in _REFLECTIVE_SLOT_KEYS:
+        value = slots.get(key)
+        if isinstance(value, str):
+            parts.append(value)
+    parts.extend(str(color) for color in slots.get("colors") or [])
+    parts.append(str(slots.get("color_anchor") or ""))
+    context = " ".join(parts).lower()
+    return any(trigger in context for trigger in _REFLECTIVE_GLOSS_TRIGGERS)
+
+
+def _soften_reflective_text(value: str) -> str:
+    text = str(value or "")
+    for src, dst in sorted(_REFLECTIVE_TEXT_REPLACEMENTS.items(), key=lambda item: len(item[0]), reverse=True):
+        text = text.replace(src, dst)
+    return _cleanup_material_text(text)
 
 
 def _finalize_material_terms(slots: dict) -> list[str]:
@@ -808,12 +1076,13 @@ def _finalize_material_terms(slots: dict) -> list[str]:
         if text:
             out.append(text)
 
-    body_soft_count = sum(1 for material in out if _is_body_soft_material(material))
-    if not out or _is_dominant_hard_material(out[0]) or not _is_body_soft_material(out[0]):
-        out.insert(0, preferred[0])
-        body_soft_count += 1
-    if body_soft_count < 2 and len(preferred) > 1:
-        out.insert(1, preferred[1])
+    body_terms = [material for material in out if _is_body_soft_material(material)]
+    accent_terms = [material for material in out if not _is_body_soft_material(material)]
+    for material in preferred:
+        if len(body_terms) >= 2:
+            break
+        body_terms.append(material)
+    out = body_terms + accent_terms
 
     # Keep the material line focused: two soft/tactile leads plus at most two
     # accents read better than a long ingredient list.
@@ -834,6 +1103,7 @@ def _material_context_text(slots: dict) -> str:
         "material_direction",
         "mood_coverage",
         "form_exploration",
+        "evidence_signals",
         "primary_signals",
     ):
         parts.extend(str(item) for item in directives.get(key) or [])
@@ -932,7 +1202,7 @@ def _demote_hard_material(material: str) -> str:
         return text
     if any(token in text for token in ("黄铜", "金", "古铜")):
         return "极薄哑光古金饰边"
-    if any(token in text for token in ("银", "铝", "铬", "钛", "钢", "金属")):
+    if any(token in text for token in ("银", "铝", "铬", "钛", "钢", "金属", "阳极氧化")):
         return "极薄低反射银灰饰边"
     if any(token in text for token in ("玻璃", "水晶", "晶体")):
         return "小面积柔光透明树脂点缀"
@@ -996,8 +1266,8 @@ def _soften_material_terms(materials: list[str]) -> list[str]:
         "半透明果冻晶体内芯": "半透明柔雾果冻内芯",
         "半透明果冻晶体": "半透明柔雾果冻树脂",
         "透明晶体": "小面积柔光透明树脂点缀",
-        "镜面铬金属": "低反射深灰硬漆",
-        "拉丝铝金属": "低反射阳极氧化漆面",
+        "镜面铬金属": "极薄低反射深灰饰边",
+        "拉丝铝金属": "极薄低反射银灰饰边",
         "阳极氧化黑铝": "低反射深灰软质饰边",
         "阳极氧化枪灰": "低反射枪灰软质饰边",
         "镜面银色细包边": "极薄低反射银灰饰边",
@@ -1008,9 +1278,9 @@ def _soften_material_terms(materials: list[str]) -> list[str]:
         "做旧黄铜": "哑光古铜薄饰边",
         "香槟金属包边": "极薄香槟色柔雾饰边",
         "香槟金细包边": "极薄香槟色柔雾饰边",
-        "缝纫皮革": "哑光软皮包覆",
         "细腻缝纫皮革": "哑光软皮包覆",
         "雾面缝纫皮革": "雾面软皮包覆",
+        "缝纫皮革": "哑光软皮包覆",
         "黑色丝绒包覆件": "黑色丝绒触感包覆",
     }
     softened: list[str] = []
@@ -1018,9 +1288,9 @@ def _soften_material_terms(materials: list[str]) -> list[str]:
         text = str(material).strip()
         if not text:
             continue
-        for src, dst in replacements.items():
+        for src, dst in sorted(replacements.items(), key=lambda item: len(item[0]), reverse=True):
             text = text.replace(src, dst)
-        softened.append(text)
+        softened.append(_cleanup_material_text(text))
     return _unique(softened)
 
 
@@ -1036,7 +1306,7 @@ def _soften_handle_phrase(text: str) -> str:
         "冷白晶体": "冷白软发光",
         "阳极氧化黑铝": "低反射深灰软胶",
         "阳极氧化枪灰": "低反射枪灰软胶",
-        "镜面铬金属": "低反射深灰硬漆",
+        "镜面铬金属": "极薄低反射深灰饰边",
         "镜面金属饰边": "低反射薄饰边",
         "金属尾盖": "低反射圆润尾盖",
         "金属边": "低反射薄边",
@@ -1055,9 +1325,18 @@ def _soften_handle_phrase(text: str) -> str:
         "绑带": "柔和包覆带",
         "护具": "圆润护片",
     }
-    for src, dst in replacements.items():
+    for src, dst in sorted(replacements.items(), key=lambda item: len(item[0]), reverse=True):
         text = text.replace(src, dst)
-    return text
+    return _cleanup_material_text(text)
+
+
+def _cleanup_material_text(text: str) -> str:
+    """Collapse duplicated descriptors created by overlapping replacements."""
+
+    cleaned = str(text or "")
+    for token in ("哑光", "低反射", "柔雾", "极薄"):
+        cleaned = cleaned.replace(token + token, token)
+    return cleaned
 
 
 # ---------------------------------------------------------------------------

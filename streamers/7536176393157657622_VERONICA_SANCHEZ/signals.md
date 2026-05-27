@@ -7,10 +7,10 @@
 ## Top symbols
 - (none mined)
 
-## Primary signals
+## Evidence signals
 - (none)
 
-## Missing signals
+## Missing evidence
 - `no_fan_club_name`
 - `no_recurring_mascot_or_object`
 - `no_distinct_color_system`
@@ -20,10 +20,6 @@
 
 ## Characterization
 No high-scoring community/creator stickers in bundle.
-
-## 500-coin object recommendation
-- **object**: `light_sign`
-- **reason**: light_sign fits belonging/aesthetic/talk-show/cozy support AND benefits from community_named_identity / catchphrase / typographic_treatment slots.
 
 ## Media
 - avatar: `avatar.jpg` (token `XSwFbTtrVoUt2HxCHUGlNTM3gNg`)

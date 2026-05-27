@@ -11,7 +11,7 @@
 - `Apolo` (comm)
 - `Pantera no guarda secreto a pantera` (comm)
 
-## Primary signals
+## Evidence signals
 - `named_fan_club_with_logo_stickers`
 - `community_name_distinct_from_host`
 - `recurring_mascot_or_pet`
@@ -19,15 +19,11 @@
 - `repeated_fan_ritual`
 - `logo_style_community_stickers`
 
-## Missing signals
+## Missing evidence
 - (none recorded)
 
 ## Characterization
 Melissa Navarro, known as 'Memi' to her fans, is a Spanish-speaking creator from Mexico who streams a mix of lifestyle content, competitive LIVE battles, and intimate chats. Her streams are often set in her modern apartment, with her large, well-organized walk-in closet serving as a signature backdrop. Her personality is dynamic, shifting from playful and energetic during 'get ready with me' segments and karaoke sessions to deeply emotional when addressing community drama. She has a very strong, interactive bond with her 'Panteras' fan community, who are characterized by their fierce loyalty and coordinated support.
-
-## 500-coin object recommendation
-- **object**: `light_stick`
-- **reason**: The light_stick fits the fierce, loyal, and battle-ready 'Panteras' community, and the well-established panther mascot provides an iconic hero element for the topper.
 
 ## Media
 - avatar: `avatar.jpg` (token `PCXDbfgcsoukyPxT1OPl99MXgxg`)

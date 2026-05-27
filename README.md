@@ -202,6 +202,74 @@ HostInput / VLM vision
 - 排查错配时先看 `outputs/.../contact_sheet_debug.jpg` 和 `routing_trace.json` 里的 `matched_tags` / `score`，再决定是补 manifest tag 还是补 alias。
 - 云端服务如果长进程常驻，更新 `tag_aliases.yaml` / `manifest.yaml` 后需要重启进程，让本地 YAML 配置重新加载。
 
+### Streamer signals 和风格控制
+
+`streamers/<anchor_id>_<name>/signals.md` 是主播资料的轻量证据层。这里不要直接写最终 prompt，也不要写复杂设计方案；它只记录“后续编排可以相信的证据”。
+
+推荐结构：
+
+```md
+## Top symbols
+- `🦅` (comm)
+- `Team Zahira` (comm)
+
+## Evidence signals
+- `recurring_mascot_or_pet`
+- `logo_style_community_stickers`
+
+## Missing evidence
+- `no_distinct_color_system`
+
+## Characterization
+主播内容、人格、场景和社群行为的自然语言描述。
+```
+
+`Evidence signals` 以前叫 `Primary signals`，`Missing evidence` 以前叫 `Missing signals`。解析器仍兼容旧标题，但新文件优先使用 evidence / missing evidence，因为这些字段本质上不是最终设计结论，而是给后续确定性编排使用的证据。
+
+这些 signals 会进入两条链路：
+
+```text
+signals.md
+  -> HostInput.raw
+  -> HostBrief tags + style_controls
+  -> RetrievalIntent anchors
+  -> ReferenceRouter / template_first prompt
+```
+
+`community_gift/style_controls.py` 会在本地、无 LLM 地判断两个小旋钮：
+
+| 字段 | 含义 | 影响 |
+| --- | --- | --- |
+| `wildness_score` | 0-3，是否适合更野性、守护、动物徽章、战斗感的形态语言 | 给 reference routing 补 `eagle` / `wing` / `protective` 等 anchor，并在 prompt 中加入有界野性转译 |
+| `creativity_score` | 0-3，主播资料本身支持多大造型变化 | 控制 prompt 是否允许异形轮廓、包裹式护片、浅浮雕、主题压纹 |
+| `effective_creativity` | `creativity_score + STYLE_AGGRESSION` 后的实际值 | 批量调参时真正生效的创意强度 |
+
+默认不调用 LLM，也不读取图片之外的新信息。它只看 `Top symbols`、`Evidence signals`、`Missing evidence`、`Characterization`、VLM 结构化槽位和已有 tags。
+
+批量觉得图太单调时，可以临时提高：
+
+```bash
+STYLE_AGGRESSION=1 python3 scripts/run_streamers_debug_preview.py --start 0 --count 32
+```
+
+觉得太飘或太像复杂雕塑时，可以降低：
+
+```bash
+STYLE_AGGRESSION=-1 python3 scripts/run_streamers_debug_preview.py --start 0 --count 32
+```
+
+调试时看这些位置：
+
+- `outputs/.../host_briefs/*.json`：每个主播的 `style_controls` 分数、boost tags 和 reasons。
+- `outputs/.../routing_trace.json`：最终传给 reference router 的 anchors，以及 style controls trace。
+- `outputs/.../contact_sheet_debug.jpg`：reference 命中、score、fallback 和 matched tags。
+
+设计边界：
+
+- 野性只转译为圆钝羽翼弧片、徽章护盾、爪痕浅压纹、上扬软胶护片等产品语言。
+- 不允许把野性转成尖锐武器、硬甲、真实动物头、机甲碎片或攻击性道具。
+- `community_name_distinct_from_host`、`repeated_fan_ritual` 这类归属证据不会单独推高创意强度；真正推造型的是 recurring mascot/object、logo/sticker、鹰/豹/龙、battle/protective 等稳定视觉证据。
+
 ### 抠图颜色约定
 
 主流程可以继续使用纯黑背景，但产品本体不能再使用纯黑作为大面积主色。即使主播字段里写了黑色、黑鸟、glossy black resin，也只作为主题语义处理，实际产品外壳、手柄、轮廓和大面积装饰必须转成烟灰、枪灰、银灰、珠光灰、奶油白或彩色树脂，并保留清楚的灰/银/彩色边缘高光，方便后续从黑底抠图。

@@ -17,6 +17,7 @@ aliases:
     - 动物
   cat:
     - feline
+  panther:
     - panther
     - pantera
     - panteras
@@ -33,6 +34,7 @@ aliases:
     - 鸟
     - 鸟类
   eagle:
+    - 🦅
     - falcon
     - hawk
     - 猎鹰
@@ -269,7 +271,7 @@ parents:
   cat:
     - animal
   panther:
-    - cat
+    - wild_animal
     - animal
   frog:
     - animal

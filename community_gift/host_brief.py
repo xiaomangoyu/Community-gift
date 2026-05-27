@@ -29,6 +29,7 @@ from pydantic import BaseModel, Field
 
 from .host_vision import HostVisionBrief
 from .models import HostInput
+from .style_controls import StyleControls, derive_style_controls
 
 
 # ---------------------------------------------------------------------------
@@ -54,6 +55,7 @@ class RetrievalIntent(BaseModel):
     material_anchors: list[str] = Field(default_factory=list)
     vibe_anchors: list[str] = Field(default_factory=list)
     text_anchors: list[str] = Field(default_factory=list)
+    style_controls: StyleControls = Field(default_factory=StyleControls)
     avoid_text_scripts: list[str] = Field(default_factory=list)  # filled by eval
     notes: str = ""
 
@@ -64,11 +66,12 @@ def derive_retrieval_intent(brief: "HostBrief") -> RetrievalIntent:
     avoid_scripts = _avoid_scripts_for(brief.script_kind)
     return RetrievalIntent(
         row_id=brief.row_id,
-        shape_anchors=list(brief.shape_tags),
+        shape_anchors=_dedupe(list(brief.shape_tags) + list(brief.style_controls.shape_boosts)),
         color_anchors=list(brief.color_tags),
-        material_anchors=list(brief.material_tags),
-        vibe_anchors=list(brief.vibe_tags),
+        material_anchors=_dedupe(list(brief.material_tags) + list(brief.style_controls.material_boosts)),
+        vibe_anchors=_dedupe(list(brief.vibe_tags) + list(brief.style_controls.vibe_boosts)),
         text_anchors=list(brief.text_tags),
+        style_controls=brief.style_controls,
         avoid_text_scripts=avoid_scripts,
         notes=(
             f"avoid non-target scripts for {brief.script_kind} text"
@@ -93,6 +96,8 @@ _SHAPE_INFERENCE: dict[str, list[str]] = {
     "shell": ["龟壳", "shell", "turtle"],
     "fruit_cluster": ["樱桃", "cherry", "果"],
     "bird": ["鸟", "bird", "feather", "乌鸦", "黑鸟", "crow", "raven"],
+    "eagle": ["🦅", "eagle", "falcon", "hawk", "猎鹰", "鹰"],
+    "panther": ["panther", "pantera", "black panther", "黑豹", "豹"],
     "electric": ["闪电", "电光", "electric", "lightning", "thunderbolt"],
 }
 
@@ -178,6 +183,10 @@ class HostBrief(BaseModel):
     vibe_tags: list[str] = Field(default_factory=list)
     text_tags: list[str] = Field(default_factory=list)
 
+    # Deterministic style controls. These keep subjective range controls
+    # inspectable instead of burying them in prompt prose.
+    style_controls: StyleControls = Field(default_factory=StyleControls)
+
     # Text-self-check metadata
     script_kind: str = ""        # latin / korean / arabic / chinese / mixed / empty
     has_emoji: bool = False
@@ -218,6 +227,7 @@ class HostBrief(BaseModel):
                 "secondary_symbol": self.secondary_symbol,
                 "symbol_text": " ".join(self.symbols_raw),
                 "all_colors": self.all_colors,
+                "style_controls": self.style_controls.model_dump(),
             },
             "brief": self.model_dump(),
             "intent": intent.model_dump() if intent is not None else {},
@@ -245,7 +255,7 @@ def build_host_brief(host: HostInput, vision: HostVisionBrief | None = None) -> 
 
     all_colors = " ".join(part for part in [host.primary_color, host.secondary_color] if part).strip()
 
-    shape_tokens = _split(" ".join(symbols_raw)) + _split(host.body_form) + _split(host.content_type)
+    shape_tokens = _split_many(symbols_raw) + _split(host.body_form) + _split(host.content_type)
     color_tokens = _split(all_colors)
     vibe_tokens = _split(host.live_vibe) + _split(host.personality)
 
@@ -275,13 +285,11 @@ def build_host_brief(host: HostInput, vision: HostVisionBrief | None = None) -> 
         if vision.mood.tags:
             vibe_tags = _dedupe(vibe_tags + list(vision.mood.tags))
         if vision.signature_symbols.primary or vision.signature_symbols.secondary:
-            sym_tokens = _split(
-                " ".join(
-                    [
-                        vision.signature_symbols.primary,
-                        vision.signature_symbols.secondary,
-                    ]
-                )
+            sym_tokens = _split_many(
+                [
+                    vision.signature_symbols.primary,
+                    vision.signature_symbols.secondary,
+                ]
             )
             shape_tags = _dedupe(shape_tags + sym_tokens + _infer(sym_tokens, _SHAPE_INFERENCE))
         if vision.palette.main_color or vision.palette.secondary_color:
@@ -300,6 +308,16 @@ def build_host_brief(host: HostInput, vision: HostVisionBrief | None = None) -> 
         script_kind = vision.text.script
         if vision.text.script not in text_tags:
             text_tags = _dedupe([vision.text.script] + text_tags)
+
+    style_controls = derive_style_controls(
+        host,
+        primary_symbol=primary_symbol,
+        secondary_symbol=secondary_symbol,
+        shape_tags=shape_tags,
+        vibe_tags=vibe_tags,
+        material_tags=material_tags,
+        color_tags=color_tags,
+    )
 
     return HostBrief(
         row_id=host.row_id,
@@ -324,6 +342,7 @@ def build_host_brief(host: HostInput, vision: HostVisionBrief | None = None) -> 
         material_tags=material_tags,
         vibe_tags=vibe_tags,
         text_tags=text_tags,
+        style_controls=style_controls,
         script_kind=script_kind,
         has_emoji=has_emoji,
         char_count=char_count,
@@ -410,6 +429,13 @@ def _split(value: str) -> list[str]:
         token = token.strip().lower()
         if token:
             parts.append(token)
+    return parts
+
+
+def _split_many(values: list[str]) -> list[str]:
+    parts: list[str] = []
+    for value in values:
+        parts.extend(_split(value))
     return parts
 
 

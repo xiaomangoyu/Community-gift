@@ -8,10 +8,10 @@
 - `Gigi` (host)
 - `Queen of TikTok` (host)
 
-## Primary signals
+## Evidence signals
 - (none)
 
-## Missing signals
+## Missing evidence
 - `symbols_are_only_creator_nickname`
 - `no_recurring_mascot_or_object`
 - `no_distinct_color_system`
@@ -20,10 +20,6 @@
 
 ## Characterization
 The anchor, Queen_of_tiktok, hosts high-energy, instructional 'networking' or 'follow train' streams. Her primary content involves managing multi-guest boxes and directing her audience to follow each other to grow their accounts. The vibe is fast-paced, loud, and directive, with the host acting as a community growth coordinator. Visually, she streams from a simple setup but frequently changes her appearance with various hair accessories, hats, and outfits, maintaining a dynamic and engaging presence.
-
-## 500-coin object recommendation
-- **object**: `light_sign`
-- **reason**: The light stick is not viable without a visual hero for the topper, while a light sign can at least be scaffolded with the creator's name, fitting the directive talk-show format.
 
 ## Media
 - avatar: `avatar.jpg` (token `Alg8bXYSvooxJWxzbZglygcqg5e`)
